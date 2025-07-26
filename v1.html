@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archeopedia - Archaeological Sites in Morocco</title>
+  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    header, footer {
+      background: #fff;
+      padding: 1em;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 2em;
+      background: #f1f1f1;
+      padding: 0.5em;
+    }
+    nav a {
+      text-decoration: none;
+      color: #0077cc;
+      font-weight: bold;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      height: calc(100vh - 160px);
+    }
+    #map {
+      width: 70%;
+      height: 100%;
+    }
+    #sidebar {
+      width: 30%;
+      height: 100%;
+      overflow-y: auto;
+      padding: 1em;
+      background-color: #fff;
+      border-left: 1px solid #ccc;
+    }
+    .site-card {
+      border-bottom: 1px solid #ddd;
+      padding: 0.5em 0;
+    }
+    .search {
+      padding: 1em 0;
+      position: relative;
+    }
+    .search input {
+      width: 100%;
+      padding: 0.5em;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .autocomplete-suggestions {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-top: none;
+      z-index: 999;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .autocomplete-suggestions div {
+      padding: 0.5em;
+      cursor: pointer;
+    }
+    .autocomplete-suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+    .detail-page {
+      padding: 2em;
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+    }
+    .detail-map {
+      height: 300px;
+      margin: 1em 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Archeopedia: Moroccan Archaeological Sites</h1>
+  </header>
+  <nav>
+    <a href="#" onclick="showHome()">🏠 Home Map</a>
+    <a href="#" onclick="showList()">📋 Sites List</a>
+  </nav>
+  <div id="home" class="container">
+    <div id="map"></div>
+    <div id="sidebar">
+      <div class="search">
+        <input type="text" id="searchBox" placeholder="Search for a site...">
+        <div id="searchSuggestions" class="autocomplete-suggestions"></div>
+      </div>
+      <div id="siteList"></div>
+      <button onclick="resetMap()">🔄 Reset Map View</button>
+    </div>
+  </div>
+  <div id="listView" style="display:none; padding:2em;">
+    <h2>📋 All Sites</h2>
+    <div class="search">
+      <input type="text" id="listSearch" placeholder="Search...">
+      <div id="listSuggestions" class="autocomplete-suggestions"></div>
+    </div>
+    <ul id="allSites"></ul>
+  </div>
+  <div id="detailView" class="detail-page" style="display:none;">
+    <h2 id="siteName"></h2>
+    <div id="detailMap" class="detail-map"></div>
+    <table id="siteTable"></table>
+  </div>
+  <footer>
+    <p>Data powered by Xronos | Map: Esri</p>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { center: [31.5, -7], zoom: 6 });
+    const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' }).addTo(map);
+    const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
+
+    const baseLayers = {
+      "Satellite (Esri)": esriImagery,
+      "Topographic (Esri)": esriTopo
+    };
+    L.control.layers(baseLayers).addTo(map);
+    L.control.scale().addTo(map);
+
+    let rawData = [], markers = [], suggestions = [];
+
+    async function fetchData() {
+      const res = await fetch('data/output.json');
+      rawData = await res.json();
+      suggestions = rawData.map(s => s.site.toLowerCase());
+      populateSites(rawData);
+      fillListView(rawData);
+    }
+
+    function populateSites(data) {
+      const list = document.getElementById('siteList');
+      list.innerHTML = '';
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      data.forEach(site => {
+        if (!site.lat || !site.lng) return;
+        const marker = L.marker([+site.lat, +site.lng]).addTo(map)
+          .bindPopup(`<strong>${site.site}</strong><br/>${site.periods}`);
+        markers.push(marker);
+        const div = document.createElement('div');
+        div.className = 'site-card';
+        div.innerHTML = `<strong>${site.site}</strong><br><small>${site.labnr}</small><br><small>${site.periods}</small>`;
+        div.onclick = () => showDetail(site);
+        list.appendChild(div);
+      });
+    }
+
+    function fillListView(data) {
+      const list = document.getElementById('allSites');
+      list.innerHTML = '';
+      data.forEach(site => {
+        const li = document.createElement('li');
+        li.textContent = site.site;
+        li.style.cursor = 'pointer';
+        li.onclick = () => showDetail(site);
+        list.appendChild(li);
+      });
+    }
+
+    function setupAutocomplete(inputId, boxId, callback) {
+      const input = document.getElementById(inputId);
+      const box = document.getElementById(boxId);
+      input.addEventListener('input', () => {
+        const value = input.value.toLowerCase();
+        box.innerHTML = '';
+        if (value.length < 2) return;
+        suggestions.filter(s => s.includes(value)).slice(0, 10).forEach(s => {
+          const div = document.createElement('div');
+          div.textContent = s;
+          div.onclick = () => {
+            input.value = s;
+            box.innerHTML = '';
+            callback(s);
+          };
+          box.appendChild(div);
+        });
+      });
+    }
+
+    function searchAndFilter(term) {
+      const filtered = rawData.filter(s => s.site.toLowerCase().includes(term));
+      populateSites(filtered);
+      fillListView(filtered);
+    }
+
+    function showDetail(site) {
+      document.getElementById('home').style.display = 'none';
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+      if (!site) return;
+      document.getElementById('siteName').textContent = site.site;
+      const table = document.getElementById('siteTable');
+      table.innerHTML = '';
+      for (const key in site) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<th>${key}</th><td>${site[key]}</td>`;
+        table.appendChild(row);
+      }
+      const mapDiv = document.getElementById('detailMap');
+      mapDiv.innerHTML = '';
+      const detailMap = L.map(mapDiv).setView([+site.lat, +site.lng], 10);
+      esriImagery.addTo(detailMap);
+      L.marker([+site.lat, +site.lng]).addTo(detailMap);
+    }
+
+    function showHome() {
+      document.getElementById('home').style.display = 'flex';
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'none';
+    }
+
+    function showList() {
+      document.getElementById('home').style.display = 'none';
+      document.getElementById('listView').style.display = 'block';
+      document.getElementById('detailView').style.display = 'none';
+    }
+
+    function resetMap() {
+      map.setView([31.5, -7], 6);
+    }
+
+    setupAutocomplete('searchBox', 'searchSuggestions', searchAndFilter);
+    setupAutocomplete('listSearch', 'listSuggestions', searchAndFilter);
+    fetchData();
+  </script>
+</body>
+</html>
