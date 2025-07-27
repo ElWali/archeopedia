@@ -1,131 +1,231 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Interactive Archaeological Timeline</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.8/dist/tailwind.min.css"/>
-<style>
-  .tooltip {
-    position: absolute;
-    background: rgba(0,0,0,0.75);
-    color: white;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    display: none;
-    max-width: 200px;
-    z-index: 10;
-  }
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="جدول زمني تفاعلي للعصور الأثرية في العالم القديم والجديد."/>
+  <title>الجدول الزمني التفاعلي للعصور الأثرية</title>
+  <!-- Tailwind CSS via CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.8/dist/tailwind.min.css"/>
+  <style>
+    /* تخصيص إضافي وتحسينات */
+    body {
+      font-family: 'Cairo', sans-serif; /* استخدام خط مناسب للغة العربية إذا كان متاحاً */
+    }
+
+    /* تحسينات على التلميح (Tooltip) */
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      max-width: 260px;
+      z-index: 50;
+      pointer-events: none; /* يمنع التلميح من اعتراض أحداث الفأرة */
+      opacity: 0;
+      transition: opacity 0.3s ease; /* تأثير ظهور سلس */
+      visibility: hidden;
+    }
+    .tooltip.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* تمييز زر الفلترة النشط */
+    .btn-filter.active {
+      transform: scale(1.1);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans p-6">
-<h1 class="text-4xl font-bold text-center text-blue-900 mb-8">
-  Archaeological Timescale Interactive Timeline
-</h1>
+<body class="bg-gray-100 p-6 antialiased">
 
-<div class="flex justify-center mb-6">
-  <button data-filter="all" class="btn-filter px-4 py-2 mx-2 bg-blue-500 text-white rounded">Show All</button>
-  <button data-filter="Old World" class="btn-filter px-4 py-2 mx-2 bg-green-500 text-white rounded">Old World</button>
-  <!-- يمكنك إضافة زر للعالم الجديد حسب الحاجة -->
+<header class="text-center mb-10">
+  <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">
+    الجدول الزمني التفاعلي للعصور الأثرية
+  </h1>
+  <p class="text-lg text-gray-600">استكشف العصور الحجرية، البرونزية، والحديدية وغيرها</p>
+</header>
+
+<!-- أزرار الفلترة -->
+<div class="flex justify-center items-center flex-wrap gap-4 mb-8">
+  <button data-filter="all" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105 active" style="background-color: #3b82f6;">عرض الكل</button>
+  <button data-filter="Old World" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105" style="background-color: #22c55e;">العالم القديم</button>
+  <button data-filter="New World" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105" style="background-color: #f97316;">العالم الجديد</button>
 </div>
 
-<div id="timeline" class="flex overflow-x-auto gap-6 h-80 p-4">
-  <!-- العناصر تُولّد تلقائيًا -->
+<!-- حاوية الجدول الزمني -->
+<div id="timeline" class="flex overflow-x-auto gap-6 pb-6 pt-2" style="scroll-snap-type: x mandatory;">
+  <!-- يتم إنشاء البطاقات هنا بواسطة JavaScript -->
 </div>
 
+<!-- عنصر التلميح الذي يتبع مؤشر الفأرة -->
 <div id="tooltip" class="tooltip"></div>
 
 <script>
+  // المحتوى: بيانات العصور الأثرية
   const data = [
+    // --- العالم القديم ---
     {
-      title: 'Paleolithic',
-      period: '2.5 million yrs ago – c.11,650 BP',
+      title: 'العصر الحجري القديم (الباليوليثي)',
+      period: '2.5 مليون سنة – حوالي 11,650 ق.ح',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Oldowan_tools.jpg',
-      desc: 'Old Stone Age: earliest stone tools, art and ornaments appear.',
+      desc: 'العصر الحجري القديم: ظهور أقدم الأدوات الحجرية والفن والزخارف.',
       source: 'https://en.wikipedia.org/wiki/Paleolithic'
     },
     {
-      title: 'Mesolithic',
-      period: 'c.15,000–5,000 BP (Eurasia)',
+      title: 'العصر الحجري الوسيط (الميزوليتي)',
+      period: 'حوالي 15,000–5,000 ق.ح (أوراسيا)',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Mesolithic_hut.jpg',
-      desc: 'Middle Stone Age: microliths, seasonal settlements, post-glacial adaptation.',
+      desc: 'العصر الحجري الأوسط: أدوات حجرية دقيقة (ميكروليت)، مستوطنات موسمية، والتكيف مع فترة ما بعد العصر الجليدي.',
       source: 'https://en.wikipedia.org/wiki/Mesolithic'
     },
     {
-      title: 'Neolithic',
-      period: 'c.10,000–4,500 BCE (Near East)',
+      title: 'العصر الحجري الحديث (النيوليثي)',
+      period: 'حوالي 10,000–4,500 ق.م (الشرق الأدنى)',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/Skara_Brae.jpg',
-      desc: 'New Stone Age: agriculture, pottery, permanent settlements, megalithic architecture.',
+      desc: 'العصر الحجري الجديد: بداية الزراعة، صناعة الفخار، المستوطنات الدائمة، والعمارة الصخرية الضخمة.',
       source: 'https://en.wikipedia.org/wiki/Neolithic'
     },
     {
-      title: 'Chalcolithic (Copper Age)',
-      period: 'c.4,500–3,300 BCE',
+      title: 'العصر النحاسي (الكالكوليتي)',
+      period: 'حوالي 4,500–3,300 ق.م',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Copper_age_copper.jpg',
-      desc: 'Early metallurgical period with copper use alongside stone tools.',
+      desc: 'فترة تعدينية مبكرة شهدت استخدام النحاس إلى جانب الأدوات الحجرية.',
       source: 'https://en.wikipedia.org/wiki/Chalcolithic'
     },
     {
-      title: 'Bronze Age',
-      period: 'c.3,300–1,200 BCE',
+      title: 'العصر البرونزي',
+      period: 'حوالي 3,300–1,200 ق.م',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/6/65/Bronze_Age_weapons.jpg',
-      desc: 'Use of bronze, rise of cities, trade, writing and hierarchical societies.',
+      desc: 'استخدام البرونز، ظهور المدن، التجارة، الكتابة، والمجتمعات الهرمية.',
       source: 'https://en.wikipedia.org/wiki/Bronze_Age'
     },
     {
-      title: 'Iron Age',
-      period: 'c.1,200–600 BCE',
+      title: 'العصر الحديدي',
+      period: 'حوالي 1,200–600 ق.م',
       realm: 'Old World',
       image: 'https://upload.wikimedia.org/wikipedia/commons/f/fb/Iron_age_tools.jpg',
-      desc: 'Iron metallurgy leads to stronger tools and weapons, growth of empires.',
+      desc: 'أدى تعدين الحديد إلى أدوات وأسلحة أقوى، ونمو الإمبراطوريات.',
       source: 'https://en.wikipedia.org/wiki/Iron_Age'
+    },
+    // --- العالم الجديد ---
+    {
+      title: 'المرحلة الليثية (الهنود القدامى)',
+      period: 'حوالي 16,000–8,000 ق.م',
+      realm: 'New World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/d/de/Folsom_point.jpg',
+      desc: 'أولى السكان في الأمريكتين، تميزوا بصناعة رؤوس الرماح مثل كلوفيس وفولسوم لصيد الحيوانات الضخمة.',
+      source: 'https://en.wikipedia.org/wiki/Lithic_stage'
+    },
+    {
+      title: 'العصر القديم',
+      period: 'حوالي 8,000–1,000 ق.م',
+      realm: 'New World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Bannerstone.jpg',
+      desc: 'فترة التكيف مع تغير المناخ بعد العصر الجليدي، والاعتماد على الصيد والجمع، وظهور أدوات الطحن.',
+      source: 'https://en.wikipedia.org/wiki/Archaic_period_in_the_Americas'
+    },
+    {
+      title: 'المرحلة التكوينية (وودلاند)',
+      period: 'حوالي 1,000 ق.م – 500 م',
+      realm: 'New World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Hopewell_Mound_City_Group.jpg/640px-Hopewell_Mound_City_Group.jpg',
+      desc: 'بداية الزراعة (الذرة والفاصوليا)، صناعة الفخار، بناء القرى الدائمة والتلال الترابية الاحتفالية.',
+      source: 'https://en.wikipedia.org/wiki/Formative_stage'
+    },
+    {
+      title: 'المرحلة الكلاسيكية وما بعدها',
+      period: 'حوالي 500–1521 م',
+      realm: 'New World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Chichen_Itza_3.jpg/640px-Chichen_Itza_3.jpg',
+      desc: 'ذروة الحضارات الكبرى في أمريكا الوسطى والأنديز، مثل المايا، والأزتيك، والإنكا، مع بناء المدن العظيمة.',
+      source: 'https://en.wikipedia.org/wiki/Classic_stage'
     }
   ];
 
-  const container = document.getElementById('timeline');
+  // الحصول على عناصر DOM الرئيسية
+  const timelineContainer = document.getElementById('timeline');
   const tooltip = document.getElementById('tooltip');
+  const filterButtons = document.querySelectorAll('.btn-filter');
 
-  function render(filter) {
-    container.innerHTML = '';
-    data.filter(item => filter === 'all' || item.realm === filter)
-        .forEach((it, i) => {
+  /**
+   * دالة لعرض البطاقات في الجدول الزمني بناءً على الفلتر المحدد
+   * @param {string} filter - الفلتر المراد تطبيقه ('all', 'Old World', 'New World')
+   */
+  function renderTimeline(filter) {
+    // إفراغ الحاوية قبل إعادة العرض
+    timelineContainer.innerHTML = '';
+    
+    // فلترة البيانات بناءً على الاختيار
+    const filteredData = data.filter(item => filter === 'all' || item.realm === filter);
+
+    // إنشاء بطاقة لكل عنصر في البيانات المفلترة
+    filteredData.forEach(item => {
       const card = document.createElement('div');
-      card.className = 'relative min-w-[250px] bg-white rounded-lg shadow-lg group';
-      card.style.flex = '0 0 auto';
+      // استخدام Tailwind CSS لتنسيق البطاقة مع تأثيرات عند مرور الفأرة
+      card.className = 'relative min-w-[300px] bg-white rounded-xl shadow-lg overflow-hidden group transition-all duration-300 transform hover:-translate-y-2';
+      // لجعل التمرير الأفقي أكثر سلاسة
+      card.style.scrollSnapAlign = 'start';
 
       card.innerHTML = `
-        <img src="${it.image}" alt="${it.title}" class="h-40 w-full object-cover rounded-t-lg"/>
-        <div class="p-4">
-          <h3 class="text-xl font-semibold">${it.title}</h3>
-          <p class="text-gray-600 text-sm">${it.period}</p>
+        <div class="h-48 w-full overflow-hidden">
+          <img src="${item.image}" alt="صورة لـ ${item.title}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+        </div>
+        <div class="p-5">
+          <h3 class="text-xl font-bold text-gray-800 truncate">${item.title}</h3>
+          <p class="text-gray-500 text-sm mt-1">${item.period}</p>
         </div>
       `;
+
+      // إضافة أحداث الفأرة لإظهار وإخفاء التلميح
       card.addEventListener('mousemove', e => {
-        tooltip.style.left = e.clientX + 10 + 'px';
-        tooltip.style.top = e.clientY + 10 + 'px';
-        tooltip.innerHTML = `<strong>${it.title}</strong><br>${it.desc}<br><a href="${it.source}" target="_blank" class="underline text-blue-200 text-xs">Source</a>`;
-        tooltip.style.display = 'block';
+        // تحديد موضع التلميح بجانب المؤشر
+        tooltip.style.left = e.pageX + 15 + 'px';
+        tooltip.style.top = e.pageY + 15 + 'px';
+        // إضافة المحتوى للتلميح مع رابط للمصدر
+        tooltip.innerHTML = \`
+          <strong class="font-bold block mb-1.5 text-base">${item.title}</strong>
+          <p class="text-sm leading-relaxed">${item.desc}</p>
+          <a href="${item.source}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-300 hover:underline mt-2 inline-block">المصدر</a>
+        \`;
+        // إظهار التلميح مع تأثير سلس
+        tooltip.classList.add('visible');
       });
+
       card.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
+        // إخفاء التلميح
+        tooltip.classList.remove('visible');
       });
-      container.appendChild(card);
+
+      timelineContainer.appendChild(card);
     });
   }
 
-  document.querySelectorAll('.btn-filter').forEach(btn => {
-    btn.addEventListener('click', () => {
-      render(btn.getAttribute('data-filter'));
+  // إضافة مستمعي الأحداث لأزرار الفلترة
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // إزالة الحالة "النشطة" من جميع الأزرار
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+      // إضافة الحالة "النشطة" للزر المضغوط
+      button.classList.add('active');
+      
+      const filterValue = button.getAttribute('data-filter');
+      renderTimeline(filterValue);
     });
   });
 
-  render('all');
+  // العرض الأولي عند تحميل الصفحة (عرض الكل)
+  renderTimeline('all');
 </script>
+
 </body>
 </html>
