@@ -1,299 +1,197 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- 1. أساسيات الصفحة والتهيئة للأجهزة -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- 2. عنوان الصفحة ووصفها (مهم جداً لمحركات البحث) -->
-    <title>موسوعة آركيوبيديا | بوابتك إلى عالم الآثار والتاريخ القديم</title>
-    <meta name="description" content="آركيوبيديا هي موسوعة شاملة لاستكشاف الحضارات القديمة، الشخصيات التاريخية، والمعالم الأثرية حول العالم. تعلم عن تاريخ البشرية بطريقة تفاعلية وسهلة.">
-    
-    <!-- 3. ربط الخطوط الخارجية -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- 
-      4. الأنماط المدمجة (Embedded CSS)
-      تم وضع كل أكواد CSS هنا مباشرة لتجنب الحاجة لملف styles.css خارجي.
-    -->
-    <style>
-        /* إعدادات عامة */
-        body {
-            font-family: 'Cairo', sans-serif;
-            margin: 0;
-            line-height: 1.6;
-            text-align: right; /* دعم اللغة العربية */
-            background-color: #f9f9f9;
-            color: #333;
-        }
+<title>مشروع الأركيوبيديا الموسوعي - V5</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<style>
+* {
+  box-sizing: border-box;
+}
 
-        .container {
-            width: 90%;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+body {
+  background-color: #f1f1f1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-        /* الهيدر والتنقل */
-        .main-header {
-            background-color: #fff;
-            padding: 1rem 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+h1, h2 {
+    text-align: center;
+    color: #333;
+}
 
-        .main-header .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+/* The actual timeline (the vertical ruler) */
+.timeline {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #2c3e50;
-            text-decoration: none;
-        }
+/* The actual timeline (the vertical ruler) */
+.timeline::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  background-color: #555;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  margin-left: -3px;
+}
 
-        .main-nav ul {
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
+/* Container around content */
+.container {
+  padding: 10px 40px;
+  position: relative;
+  background-color: inherit;
+  width: 50%;
+}
 
-        .main-nav ul li {
-            display: inline-block;
-            margin-right: 20px;
-        }
-        
-        .main-nav a {
-            color: #34495e;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
-        .main-nav a:hover {
-            color: #e67e22;
-        }
+/* The circles on the timeline */
+.container::after {
+  content: '';
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  right: -17px;
+  background-color: white;
+  border: 4px solid #FF9F55;
+  top: 15px;
+  border-radius: 50%;
+  z-index: 1;
+}
 
-        /* قسم المقدمة (Hero) */
-        .hero {
-            background-color: #34495e;
-            color: #fff;
-            padding: 4rem 0;
-            text-align: center;
-        }
+/* Place the container to the left */
+.left {
+  left: 0;
+}
 
-        .hero h1 {
-            font-size: 2.8rem;
-            margin-bottom: 0.5rem;
-        }
+/* Place the container to the right */
+.right {
+  left: 50%;
+}
 
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+/* Add arrows to the left container (pointing right) */
+.left::before {
+  content: " ";
+  height: 0;
+  position: absolute;
+  top: 22px;
+  width: 0;
+  z-index: 1;
+  right: 30px;
+  border: medium solid white;
+  border-width: 10px 0 10px 10px;
+  border-color: transparent transparent transparent white;
+}
 
-        .cta-button {
-            display: inline-block;
-            background-color: #e67e22;
-            color: #fff;
-            padding: 12px 25px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 1.5rem;
-            transition: background-color 0.3s, transform 0.3s;
-        }
-        .cta-button:hover {
-            background-color: #d35400;
-            transform: translateY(-2px);
-        }
-        
-        /* أقسام المحتوى والبطاقات */
-        .content-section {
-            padding: 3rem 0;
-        }
-        .content-section h2 {
-            text-align: center;
-            font-size: 2.2rem;
-            margin-bottom: 2rem;
-            color: #2c3e50;
-        }
-        .bg-light {
-            background-color: #ffffff;
-        }
-        .grid-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-        .card {
-            background-color: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
-        }
-        .card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover; /* تضمن أن الصورة تملأ المساحة دون تشويه */
-        }
-        .card-content {
-            padding: 1.5rem;
-        }
-        .card-content h3 {
-            margin-top: 0;
-            color: #34495e;
-        }
-        .read-more {
-            color: #e67e22;
-            text-decoration: none;
-            font-weight: bold;
-        }
+/* Add arrows to the right container (pointing left) */
+.right::before {
+  content: " ";
+  height: 0;
+  position: absolute;
+  top: 22px;
+  width: 0;
+  z-index: 1;
+  left: 30px;
+  border: medium solid white;
+  border-width: 10px 10px 10px 0;
+  border-color: transparent white transparent transparent;
+}
 
-        /* قائمة الشخصيات */
-        #figures ul {
-            list-style: none;
-            padding: 0;
-            text-align: center;
-        }
-        #figures li {
-            margin-bottom: 0.5rem;
-        }
-        #figures a {
-            color: #34495e;
-            text-decoration: none;
-            font-size: 1.1rem;
-        }
-        #figures a:hover {
-            text-decoration: underline;
-        }
+/* Fix the circle for containers on the right side */
+.right::after {
+  left: -16px;
+}
 
-        /* التذييل (Footer) */
-        .main-footer {
-            background-color: #2c3e50;
-            color: #ecf0f1;
-            text-align: center;
-            padding: 1.5rem 0;
-            margin-top: 2rem;
-        }
-    </style>
+/* The actual content */
+.content {
+  padding: 20px 30px;
+  background-color: white;
+  position: relative;
+  border-radius: 6px;
+}
+
+.content h2 {
+    color: #0056b3;
+}
+
+.content p {
+    line-height: 1.7;
+    text-align: justify;
+}
+
+/* Media queries - Responsive timeline on screens less than 600px wide */
+@media screen and (max-width: 600px) {
+  /* Place the timelime to the left */
+  .timeline::after {
+  left: 31px;
+  }
+  
+  /* Full-width containers */
+  .container {
+  width: 100%;
+  padding-left: 70px;
+  padding-right: 25px;
+  }
+  
+  /* Make sure that all arrows are pointing leftwards */
+  .container::before {
+  left: 60px;
+  border: medium solid white;
+  border-width: 10px 10px 10px 0;
+  border-color: transparent white transparent transparent;
+  }
+
+  /* Make sure all circles are at the same spot */
+  .left::after, .right::after {
+  left: 15px;
+  }
+  
+  /* Make all right containers behave like the left ones */
+  .right {
+  left: 0%;
+  }
+}
+</style>
 </head>
 <body>
 
-    <!-- ======== الهيدر وقائمة التنقل ======== -->
-    <header class="main-header">
-        <div class="container">
-            <a href="index.html" class="logo">آركيوبيديا</a>
-            <nav class="main-nav">
-                <ul>
-                    <li><a href="#civilizations">الحضارات</a></li>
-                    <li><a href="#figures">شخصيات</a></li>
-                    <li><a href="#about">عن الموسوعة</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+<h1>مشروع الأركيوبيديا الموسوعي</h1>
+<h2>الجدول الزمني الأثري (نسخة محسّنة)</h2>
+<p style="text-align:center; max-width: 800px; margin: 20px auto;">بناءً على دمج البيانات من مشروع الأركيوبيديا والمصادر الأثرية الحديثة مثل موقع "Ancient Odysseys". يرجى ملاحظة أن التواريخ قد تختلف بشكل كبير حسب الموقع الجغرافي.</p>
 
-    <!-- ======== المحتوى الرئيسي للصفحة ======== -->
-    <main>
-        <!-- ======== قسم المقدمة (Hero Section) ======== -->
-        <section class="hero">
-            <div class="container">
-                <h1>اكتشف أسرار التاريخ القديم</h1>
-                <p class="subtitle">موسوعتك لاستكشاف الحضارات العريقة والشخصيات التي شكلت عالمنا.</p>
-                <a href="#civilizations" class="cta-button">ابدأ رحلتك الآن</a>
-            </div>
-        </section>
-
-        <!-- ======== قسم تعريف بالموسوعة ======== -->
-        <section id="about" class="content-section">
-            <div class="container" style="text-align: center; max-width: 800px;">
-                <h2>ما هي آركيوبيديا؟</h2>
-                <p>آركيوبيديا ليست مجرد موقع، بل هي رحلة عبر الزمن. نحن نقدم معلومات دقيقة وموثوقة حول التاريخ القديم والآثار، مقدمة بأسلوب شيق وسهل الفهم. هدفنا هو جعل التاريخ في متناول الجميع.</p>
-            </div>
-        </section>
-
-        <!-- ======== قسم الحضارات (مع صور من ويكيبيديا) ======== -->
-        <section id="civilizations" class="content-section bg-light">
-            <div class="container">
-                <h2>أبرز الحضارات القديمة</h2>
-                <div class="grid-layout">
-                    <!-- بطاقة الحضارة السومرية -->
-                    <article class="card">
-                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز (التابع لويكيبيديا) -->
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Ziggurat_of_ur.jpg/600px-Ziggurat_of_ur.jpg" alt="معبد زقورة أور السومري">
-                        <div class="card-content">
-                            <h3>الحضارة السومرية</h3>
-                            <p>تعتبر من أقدم الحضارات في بلاد ما بين النهرين، اشتهرت باختراع الكتابة المسمارية وبناء الزقورات.</p>
-                            <a href="/civilizations/sumerian.html" class="read-more">اعرف المزيد ←</a>
-                        </div>
-                    </article>
-
-                    <!-- بطاقة الحضارة المصرية -->
-                    <article class="card">
-                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز -->
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/All_Gizah_Pyramids.jpg/600px-All_Gizah_Pyramids.jpg" alt="أهرامات الجيزة في مصر">
-                        <div class="card-content">
-                            <h3>الحضارة المصرية القديمة</h3>
-                            <p>حضارة عظيمة قامت على ضفاف النيل، تركت وراءها كنوزاً أثرية مذهلة مثل الأهرامات والمعابد الضخمة.</p>
-                            <a href="/civilizations/egyptian.html" class="read-more">اعرف المزيد ←</a>
-                        </div>
-                    </article>
-                    
-                    <!-- بطاقة حضارة وادي السند -->
-                    <article class="card">
-                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز -->
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Mohenjo-daro_lower_town_with_stupa_in_background.jpg/600px-Mohenjo-daro_lower_town_with_stupa_in_background.jpg" alt="أطلال مدينة موهينجو دارو">
-                        <div class="card-content">
-                            <h3>حضارة وادي السند</h3>
-                            <p>واحدة من أقدم ثلاث حضارات في العالم القديم، ازدهرت في حوض نهر السند وتميزت بتخطيطها الحضري المتقدم.</p>
-                            <a href="/civilizations/indus.html" class="read-more">اعرف المزيد ←</a>
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <!-- ======== قسم الشخصيات التاريخية ======== -->
-        <section id="figures" class="content-section">
-            <div class="container">
-                <h2>شخصيات غيرت مجرى التاريخ</h2>
-                <ul>
-                    <li><a href="/figures/hammurabi.html">حمورابي</a>: ملك بابل وسادس حكامها، وصاحب المسلة الشهيرة.</li>
-                    <li><a href="/figures/cleopatra.html">كليوباترا السابعة</a>: آخر ملكات السلالة البطلمية في مصر.</li>
-                    <li><a href="/figures/alexander.html">الإسكندر الأكبر</a>: أحد أعظم القادة العسكريين في التاريخ.</li>
-                </ul>
-            </div>
-        </section>
-    </main>
-
-    <!-- ======== تذييل الصفحة (Footer) ======== -->
-    <footer class="main-footer">
-        <div class="container">
-            <p>© 2025 موسوعة آركيوبيديا. جميع الحقوق محفوظة.</p>
-        </div>
-    </footer>
-
-    <!-- 
-      5. الجافاسكريبت المدمج (Embedded JavaScript)
-      تم وضعه في نهاية الصفحة لضمان عدم إعاقته لعملية تحميل المحتوى المرئي.
-    -->
-    <script>
-        // يمكن إضافة وظائف تفاعلية هنا مستقبلاً
-        console.log("تم تحميل موقع آركيوبيديا بنجاح!");
-    </script>
+<div class="timeline">
+  <div class="container left">
+    <div class="content">
+      <h2>العصر الحجري القديم (الباليوليتي)</h2>
+      <p><strong>(من 2.5 مليون سنة إلى 10,200 قبل الميلاد)</strong><br>يمتد هذا العصر ليشكل أطول فترة في التاريخ القديم. تشمل المكتشفات من هذا الوقت بقايا بشرية متحجرة وأدوات حجرية تزداد تعقيدًا بمرور الوقت. تميزت الأدوات المبكرة ببساطتها، مثل الفؤوس والرقائق التي تُعرف بالأولدوانية. ومنذ حوالي 1.7 مليون سنة، ظهرت أشكال أكثر تعقيدًا ذات حواف حادة تُعرف بالأشولينية. وفي حوالي 38,000 قبل الميلاد، بدأت تظهر أولى الزخارف الشخصية والرسومات على الكهوف.</p>
+    </div>
+  </div>
+  <div class="container right">
+    <div class="content">
+      <h2>العصر الحجري الحديث (النيوليتي)</h2>
+       <p><strong>(تقريبًا من 10,200 قبل الميلاد)</strong><br>يتميز هذا العصر بتطورات تكنولوجية واجتماعية كبرى، حيث شهد بداية الزراعة وتدجين الحيوانات، مما أدى إلى استقرار الإنسان في تجمعات سكنية وقرى ومدن. هذا التحول سمح بزيادة الإنتاج الغذائي وتطور التنظيمات الاجتماعية والسياسية الأولى.</p>
+    </div>
+  </div>
+    <div class="container left">
+    <div class="content">
+      <h2>العصر الحجري النحاسي (الكالكوليتي)</h2>
+      <p><strong>(من 5000 قبل الميلاد إلى 3500 قبل الميلاد)</strong><br>يمثل هذا العصر فترة انتقالية هامة بين العصر الحجري والعصر البرونزي، حيث تم استخدام النحاس النقي لأول مرة في تاريخ البشرية لصناعة بعض الأدوات بجانب الأدوات الحجرية.</p>
+    </div>
+  </div>
+  <div class="container right">
+    <div class="content">
+      <h2>العصر البرونزي</h2>
+      <p><strong>(من 3000 قبل الميلاد إلى 1000 قبل الميلاد)</strong><br>شهد العصر البرونزي المرة الأولى التي بدأ فيها الإنسان بالعمل المنهجي بالمعادن، حيث حلت الأدوات والأسلحة البرونزية محل نظيراتها الحجرية. تتميز هذه الفترة أيضًا باختراعات غيرت وجه البشرية مثل العجلة، والمحراث الذي تجره الثيران، وتطور شبكات التجارة، وظهور أولى أشكال الكتابة كالمسمارية والهيروغليفية.</p>
+    </div>
+  </div>
+    <div class="container left">
+    <div class="content">
+      <h2>العصر الحديدي</h2>
+      <p><strong>(من 1200 قبل الميلاد إلى 800 ميلادي)</strong><br>تتفاوت تواريخ العصر الحديدي بشكل كبير حسب الموقع. تميز بالقدرة على صهر خام الحديد لصناعة أدوات وأسلحة فولاذية كانت أقوى وأكثر زخرفة. أدى تطور صناعة الحديد وتوافر مصادره إلى تفوقه على البرونز وانخفاض تكلفته، مما أدى إلى استبدال البرونز بالحديد في معظم الصناعات.</p>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
