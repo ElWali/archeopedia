@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Interactive Archaeological Timeline</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.8/dist/tailwind.min.css"/>
+<style>
+  .tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.75);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    display: none;
+    max-width: 200px;
+    z-index: 10;
+  }
+</style>
+</head>
+<body class="bg-gray-100 font-sans p-6">
+<h1 class="text-4xl font-bold text-center text-blue-900 mb-8">
+  Archaeological Timescale Interactive Timeline
+</h1>
+
+<div class="flex justify-center mb-6">
+  <button data-filter="all" class="btn-filter px-4 py-2 mx-2 bg-blue-500 text-white rounded">Show All</button>
+  <button data-filter="Old World" class="btn-filter px-4 py-2 mx-2 bg-green-500 text-white rounded">Old World</button>
+  <!-- يمكنك إضافة زر للعالم الجديد حسب الحاجة -->
+</div>
+
+<div id="timeline" class="flex overflow-x-auto gap-6 h-80 p-4">
+  <!-- العناصر تُولّد تلقائيًا -->
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<script>
+  const data = [
+    {
+      title: 'Paleolithic',
+      period: '2.5 million yrs ago – c.11,650 BP',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Oldowan_tools.jpg',
+      desc: 'Old Stone Age: earliest stone tools, art and ornaments appear.',
+      source: 'https://en.wikipedia.org/wiki/Paleolithic'
+    },
+    {
+      title: 'Mesolithic',
+      period: 'c.15,000–5,000 BP (Eurasia)',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Mesolithic_hut.jpg',
+      desc: 'Middle Stone Age: microliths, seasonal settlements, post-glacial adaptation.',
+      source: 'https://en.wikipedia.org/wiki/Mesolithic'
+    },
+    {
+      title: 'Neolithic',
+      period: 'c.10,000–4,500 BCE (Near East)',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/Skara_Brae.jpg',
+      desc: 'New Stone Age: agriculture, pottery, permanent settlements, megalithic architecture.',
+      source: 'https://en.wikipedia.org/wiki/Neolithic'
+    },
+    {
+      title: 'Chalcolithic (Copper Age)',
+      period: 'c.4,500–3,300 BCE',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Copper_age_copper.jpg',
+      desc: 'Early metallurgical period with copper use alongside stone tools.',
+      source: 'https://en.wikipedia.org/wiki/Chalcolithic'
+    },
+    {
+      title: 'Bronze Age',
+      period: 'c.3,300–1,200 BCE',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/6/65/Bronze_Age_weapons.jpg',
+      desc: 'Use of bronze, rise of cities, trade, writing and hierarchical societies.',
+      source: 'https://en.wikipedia.org/wiki/Bronze_Age'
+    },
+    {
+      title: 'Iron Age',
+      period: 'c.1,200–600 BCE',
+      realm: 'Old World',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/f/fb/Iron_age_tools.jpg',
+      desc: 'Iron metallurgy leads to stronger tools and weapons, growth of empires.',
+      source: 'https://en.wikipedia.org/wiki/Iron_Age'
+    }
+  ];
+
+  const container = document.getElementById('timeline');
+  const tooltip = document.getElementById('tooltip');
+
+  function render(filter) {
+    container.innerHTML = '';
+    data.filter(item => filter === 'all' || item.realm === filter)
+        .forEach((it, i) => {
+      const card = document.createElement('div');
+      card.className = 'relative min-w-[250px] bg-white rounded-lg shadow-lg group';
+      card.style.flex = '0 0 auto';
+
+      card.innerHTML = `
+        <img src="${it.image}" alt="${it.title}" class="h-40 w-full object-cover rounded-t-lg"/>
+        <div class="p-4">
+          <h3 class="text-xl font-semibold">${it.title}</h3>
+          <p class="text-gray-600 text-sm">${it.period}</p>
+        </div>
+      `;
+      card.addEventListener('mousemove', e => {
+        tooltip.style.left = e.clientX + 10 + 'px';
+        tooltip.style.top = e.clientY + 10 + 'px';
+        tooltip.innerHTML = `<strong>${it.title}</strong><br>${it.desc}<br><a href="${it.source}" target="_blank" class="underline text-blue-200 text-xs">Source</a>`;
+        tooltip.style.display = 'block';
+      });
+      card.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
+      container.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      render(btn.getAttribute('data-filter'));
+    });
+  });
+
+  render('all');
+</script>
+</body>
+</html>
