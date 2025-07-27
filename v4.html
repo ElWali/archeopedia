@@ -1,197 +1,280 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<title>مشروع الأركيوبيديا الموسوعي - V5</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta charset="UTF-8">
-<style>
-* {
-  box-sizing: border-box;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التراث الرقمي - ما قبل التاريخ</title>
 
-body {
-  background-color: #f1f1f1;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+    <!-- Google Fonts: استخدام خط Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 
-h1, h2 {
-    text-align: center;
-    color: #333;
-}
+    <!-- تحميل مكتبة model-viewer -->
+    <!-- يفضل وضعها هنا لتبدأ بالتحميل مبكراً -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
-/* The actual timeline (the vertical ruler) */
-.timeline {
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+    <style>
+        /* ======== إعدادات أساسية وتصميم الخطوط ======== */
+        :root {
+            --background-color: #f0f2f5;
+            --surface-color: #ffffff;
+            --text-color: #1c1e21;
+            --subtle-text-color: #606770;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --accent-color: #0056b3;
+        }
 
-/* The actual timeline (the vertical ruler) */
-.timeline::after {
-  content: '';
-  position: absolute;
-  width: 6px;
-  background-color: #555;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  margin-left: -3px;
-}
+        body {
+            font-family: 'Cairo', sans-serif;
+            line-height: 1.8;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
-/* Container around content */
-.container {
-  padding: 10px 40px;
-  position: relative;
-  background-color: inherit;
-  width: 50%;
-}
+        h1, h2, h3 {
+            font-weight: 700;
+        }
 
-/* The circles on the timeline */
-.container::after {
-  content: '';
-  position: absolute;
-  width: 25px;
-  height: 25px;
-  right: -17px;
-  background-color: white;
-  border: 4px solid #FF9F55;
-  top: 15px;
-  border-radius: 50%;
-  z-index: 1;
-}
+        /* ======== تصميم الهيدر والفوتر ======== */
+        .site-header, .site-footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background-color: var(--surface-color);
+        }
 
-/* Place the container to the left */
-.left {
-  left: 0;
-}
+        .site-header {
+            border-bottom: 1px solid #ddd;
+        }
 
-/* Place the container to the right */
-.right {
-  left: 50%;
-}
+        .site-header h1 {
+            color: var(--accent-color);
+            margin-block-end: 0.5rem;
+        }
 
-/* Add arrows to the left container (pointing right) */
-.left::before {
-  content: " ";
-  height: 0;
-  position: absolute;
-  top: 22px;
-  width: 0;
-  z-index: 1;
-  right: 30px;
-  border: medium solid white;
-  border-width: 10px 0 10px 10px;
-  border-color: transparent transparent transparent white;
-}
+        .site-header p {
+            max-width: 700px;
+            margin-inline: auto; /* للتوسيط في RTL و LTR */
+            color: var(--subtle-text-color);
+        }
 
-/* Add arrows to the right container (pointing left) */
-.right::before {
-  content: " ";
-  height: 0;
-  position: absolute;
-  top: 22px;
-  width: 0;
-  z-index: 1;
-  left: 30px;
-  border: medium solid white;
-  border-width: 10px 10px 10px 0;
-  border-color: transparent white transparent transparent;
-}
+        .site-footer {
+            margin-block-start: 2rem;
+            border-top: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
 
-/* Fix the circle for containers on the right side */
-.right::after {
-  left: -16px;
-}
 
-/* The actual content */
-.content {
-  padding: 20px 30px;
-  background-color: white;
-  position: relative;
-  border-radius: 6px;
-}
+        /* ======== تصميم الجدول الزمني ======== */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            gap: 2.5rem;
+        }
 
-.content h2 {
-    color: #0056b3;
-}
+        .timeline-item {
+            background: var(--surface-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            padding: 2rem;
+            max-width: 720px;
+            width: 100%;
+            border-top: 5px solid var(--accent-color);
+            
+            /* إعدادات تأثير الظهور */
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
 
-.content p {
-    line-height: 1.7;
-    text-align: justify;
-}
+        /* كلاس يتم إضافته عبر الجافاسكريبت لجعل العنصر مرئياً */
+        .timeline-item.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-/* Media queries - Responsive timeline on screens less than 600px wide */
-@media screen and (max-width: 600px) {
-  /* Place the timelime to the left */
-  .timeline::after {
-  left: 31px;
-  }
-  
-  /* Full-width containers */
-  .container {
-  width: 100%;
-  padding-left: 70px;
-  padding-right: 25px;
-  }
-  
-  /* Make sure that all arrows are pointing leftwards */
-  .container::before {
-  left: 60px;
-  border: medium solid white;
-  border-width: 10px 10px 10px 0;
-  border-color: transparent white transparent transparent;
-  }
+        .timeline-content .era-date {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--subtle-text-color);
+            margin-block-start: -1rem;
+            margin-block-end: 1rem;
+        }
 
-  /* Make sure all circles are at the same spot */
-  .left::after, .right::after {
-  left: 15px;
-  }
-  
-  /* Make all right containers behave like the left ones */
-  .right {
-  left: 0%;
-  }
-}
-</style>
+        /* ======== تصميم عارض النماذج ثلاثية الأبعاد ======== */
+        model-viewer {
+            width: 100%;
+            height: 450px;
+            border-radius: 8px;
+            margin-block: 1.5rem; /* مسافة علوية وسفلية */
+            background-color: #e9e9e9;
+            --poster-color: #f8f8f8; /* لون الخلفية قبل تحميل النموذج */
+        }
+        
+        .timeline-item small {
+            display: block;
+            text-align: center;
+            color: var(--subtle-text-color);
+            font-weight: bold;
+            margin-block-start: 1rem;
+        }
+    </style>
 </head>
 <body>
 
-<h1>مشروع الأركيوبيديا الموسوعي</h1>
-<h2>الجدول الزمني الأثري (نسخة محسّنة)</h2>
-<p style="text-align:center; max-width: 800px; margin: 20px auto;">بناءً على دمج البيانات من مشروع الأركيوبيديا والمصادر الأثرية الحديثة مثل موقع "Ancient Odysseys". يرجى ملاحظة أن التواريخ قد تختلف بشكل كبير حسب الموقع الجغرافي.</p>
+    <header class="site-header">
+        <h1>التراث الرقمي</h1>
+        <p>هذا جدول زمني تجريبي لعصور ما قبل التاريخ، يُروى من خلال مجموعة مختارة من القطع الأثرية القابلة للاكتشاف. تم إنشاء كل قطعة أثرية كنموذج ثلاثي الأبعاد يمكنك التفاعل معه أو عرضه في الواقع المعزز (AR).</p>
+    </header>
 
-<div class="timeline">
-  <div class="container left">
-    <div class="content">
-      <h2>العصر الحجري القديم (الباليوليتي)</h2>
-      <p><strong>(من 2.5 مليون سنة إلى 10,200 قبل الميلاد)</strong><br>يمتد هذا العصر ليشكل أطول فترة في التاريخ القديم. تشمل المكتشفات من هذا الوقت بقايا بشرية متحجرة وأدوات حجرية تزداد تعقيدًا بمرور الوقت. تميزت الأدوات المبكرة ببساطتها، مثل الفؤوس والرقائق التي تُعرف بالأولدوانية. ومنذ حوالي 1.7 مليون سنة، ظهرت أشكال أكثر تعقيدًا ذات حواف حادة تُعرف بالأشولينية. وفي حوالي 38,000 قبل الميلاد، بدأت تظهر أولى الزخارف الشخصية والرسومات على الكهوف.</p>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>العصر الحجري الحديث (النيوليتي)</h2>
-       <p><strong>(تقريبًا من 10,200 قبل الميلاد)</strong><br>يتميز هذا العصر بتطورات تكنولوجية واجتماعية كبرى، حيث شهد بداية الزراعة وتدجين الحيوانات، مما أدى إلى استقرار الإنسان في تجمعات سكنية وقرى ومدن. هذا التحول سمح بزيادة الإنتاج الغذائي وتطور التنظيمات الاجتماعية والسياسية الأولى.</p>
-    </div>
-  </div>
-    <div class="container left">
-    <div class="content">
-      <h2>العصر الحجري النحاسي (الكالكوليتي)</h2>
-      <p><strong>(من 5000 قبل الميلاد إلى 3500 قبل الميلاد)</strong><br>يمثل هذا العصر فترة انتقالية هامة بين العصر الحجري والعصر البرونزي، حيث تم استخدام النحاس النقي لأول مرة في تاريخ البشرية لصناعة بعض الأدوات بجانب الأدوات الحجرية.</p>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>العصر البرونزي</h2>
-      <p><strong>(من 3000 قبل الميلاد إلى 1000 قبل الميلاد)</strong><br>شهد العصر البرونزي المرة الأولى التي بدأ فيها الإنسان بالعمل المنهجي بالمعادن، حيث حلت الأدوات والأسلحة البرونزية محل نظيراتها الحجرية. تتميز هذه الفترة أيضًا باختراعات غيرت وجه البشرية مثل العجلة، والمحراث الذي تجره الثيران، وتطور شبكات التجارة، وظهور أولى أشكال الكتابة كالمسمارية والهيروغليفية.</p>
-    </div>
-  </div>
-    <div class="container left">
-    <div class="content">
-      <h2>العصر الحديدي</h2>
-      <p><strong>(من 1200 قبل الميلاد إلى 800 ميلادي)</strong><br>تتفاوت تواريخ العصر الحديدي بشكل كبير حسب الموقع. تميز بالقدرة على صهر خام الحديد لصناعة أدوات وأسلحة فولاذية كانت أقوى وأكثر زخرفة. أدى تطور صناعة الحديد وتوافر مصادره إلى تفوقه على البرونز وانخفاض تكلفته، مما أدى إلى استبدال البرونز بالحديد في معظم الصناعات.</p>
-    </div>
-  </div>
-</div>
+    <main class="timeline">
 
+        <!-- ===== العصر الحجري القديم الأسفل ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحجري القديم الأسفل</h2>
+                <div class="era-date">حوالي 2,500,000 - 200,000 قبل الميلاد</div>
+                <p>يُعرف العصر الحجري القديم الأسفل أيضًا باسم العصر الحجري المبكر، وهو أقدم تقسيم للعصر الحجري القديم. يمتد من الزمن الذي ظهرت فيه أولى الأدلة على صناعة الأدوات الحجرية واستخدامها من قبل أشباه البشر.</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/1.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لفأس يدوي"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>فأس يدوي</small>
+            </div>
+        </section>
+
+        <!-- ===== العصر الحجري القديم الأوسط ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحجري القديم الأوسط</h2>
+                <div class="era-date">حوالي 200,000 - 45,000 قبل الميلاد</div>
+                <p>هو القسم الثاني من العصر الحجري القديم. شهد هذا العصر ظهور تقنيات أكثر تطورًا لصناعة الأدوات الحجرية، مثل تقنية "لوفالوا"، والتي سمحت بإنتاج شفرات ورقائق حجرية أكثر دقة وتخصصًا.</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/2.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لرأس رمح من الصوان"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>رأس رمح من الصوان</small>
+            </div>
+        </section>
+        
+        <!-- ===== العصر الحجري القديم الأعلى ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحجري القديم الأعلى</h2>
+                <div class="era-date">حوالي 45,000 - 10,000 قبل الميلاد</div>
+                <p>هو التقسيم الثالث والأخير للعصر الحجري القديم. تميز هذا العصر بظهور الإنسان العاقل (Homo sapiens) وانتشار الفن الصخري، والمنحوتات الصغيرة، والأدوات المصنوعة من العظام والعاج.</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/3.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لتمثال فينوس ويلندورف"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>فينوس ويلندورف</small>
+            </div>
+        </section>
+
+        <!-- ===== العصر الحجري الوسيط ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحجري الوسيط</h2>
+                <div class="era-date">حوالي 10,000 - 5,000 قبل الميلاد</div>
+                <p>يُعرف أيضًا بالعصر الحجري الأوسط، وهو الفترة بين العصر الحجري القديم والعصر الحجري الحديث. تميزت هذه الفترة بتكيف الإنسان مع التغيرات المناخية بعد نهاية العصر الجليدي، وتطوير أدوات حجرية صغيرة ودقيقة (Microliths).</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/4.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لشفرة صوان مركبة"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>شفرة صوان مركبة</small>
+            </div>
+        </section>
+
+        <!-- ===== العصر الحجري الحديث ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحجري الحديث</h2>
+                <div class="era-date">حوالي 5,000 - 2,500 قبل الميلاد</div>
+                <p>يُعرف أيضًا بالعصر الحجري الجديد، وهو القسم الأخير من العصر الحجري. شهد هذا العصر ثورة زراعية أدت إلى استقرار البشر في قرى دائمة، وتدجين الحيوانات، وصناعة الفخار لتخزين الطعام والمياه.</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/5.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لوعاء فخاري"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>وعاء فخاري</small>
+            </div>
+        </section>
+
+        <!-- ===== العصر البرونزي ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر البرونزي</h2>
+                <div class="era-date">حوالي 2,500 - 800 قبل الميلاد</div>
+                <p>فترة تاريخية تميزت باستخدام البرونز، وهو سبيكة من النحاس والقصدير. أدى اكتشاف هذه المادة إلى صناعة أسلحة وأدوات وزخارف أكثر متانة وفعالية، وظهرت في بعض المناطق بدايات الكتابة (Proto-writing).</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/6.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لسيف برونزي"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>سيف برونزي</small>
+            </div>
+        </section>
+
+        <!-- ===== العصر الحديدي ===== -->
+        <section class="timeline-item">
+            <div class="timeline-content">
+                <h2>العصر الحديدي</h2>
+                <div class="era-date">حوالي 800 - 1 قبل الميلاد</div>
+                <p>هي الحقبة الأخيرة في تقسيم عصور ما قبل التاريخ وبدايات التاريخ المسجل. تتميز هذه الفترة باعتماد الإنسان على صهر الحديد وتصنيع الأدوات والأسلحة منه، مما أحدث تطورًا كبيرًا في الزراعة والحروب والمجتمع.</p>
+                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/7.min.glb"
+                              alt="نموذج ثلاثي الأبعاد لخوذة حديدية"
+                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
+                </model-viewer>
+                <small>خوذة حديدية</small>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <p>تجربة من Candle</p>
+    </footer>
+
+    <script>
+        // انتظر حتى يتم تحميل كامل محتوى الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+    
+            // تحديد جميع عناصر الجدول الزمني التي نريد إظهارها تدريجياً
+            const timelineItems = document.querySelectorAll('.timeline-item');
+    
+            // التأكد من وجود عناصر لتتم مراقبتها
+            if (timelineItems.length === 0) return;
+
+            // إعداد خيارات Intersection Observer
+            // سيتم تفعيل الملاحظ عندما يكون 15% من العنصر مرئياً
+            const options = {
+                root: null, // الملاحظة بالنسبة لإطار العرض (viewport)
+                rootMargin: '0px',
+                threshold: 0.15
+            };
+    
+            // إنشاء كائن الملاحظ (Observer)
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    // إذا كان العنصر داخل إطار العرض
+                    if (entry.isIntersecting) {
+                        // أضف كلاس 'is-visible' لإظهار العنصر مع تأثير CSS
+                        entry.target.classList.add('is-visible');
+                        
+                        // أوقف مراقبة هذا العنصر بعد أن أصبح مرئياً لتحسين الأداء
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, options);
+    
+            // ابدأ بمراقبة كل عنصر من عناصر الجدول الزمني
+            timelineItems.forEach(item => {
+                observer.observe(item);
+            });
+        });
+    </script>
 </body>
 </html>
