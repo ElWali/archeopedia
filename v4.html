@@ -1,231 +1,299 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="جدول زمني تفاعلي للعصور الأثرية في العالم القديم والجديد."/>
-  <title>الجدول الزمني التفاعلي للعصور الأثرية</title>
-  <!-- Tailwind CSS via CDN -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.8/dist/tailwind.min.css"/>
-  <style>
-    /* تخصيص إضافي وتحسينات */
-    body {
-      font-family: 'Cairo', sans-serif; /* استخدام خط مناسب للغة العربية إذا كان متاحاً */
-    }
-
-    /* تحسينات على التلميح (Tooltip) */
-    .tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.85);
-      color: white;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      max-width: 260px;
-      z-index: 50;
-      pointer-events: none; /* يمنع التلميح من اعتراض أحداث الفأرة */
-      opacity: 0;
-      transition: opacity 0.3s ease; /* تأثير ظهور سلس */
-      visibility: hidden;
-    }
-    .tooltip.visible {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* تمييز زر الفلترة النشط */
-    .btn-filter.active {
-      transform: scale(1.1);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body class="bg-gray-100 p-6 antialiased">
-
-<header class="text-center mb-10">
-  <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">
-    الجدول الزمني التفاعلي للعصور الأثرية
-  </h1>
-  <p class="text-lg text-gray-600">استكشف العصور الحجرية، البرونزية، والحديدية وغيرها</p>
-</header>
-
-<!-- أزرار الفلترة -->
-<div class="flex justify-center items-center flex-wrap gap-4 mb-8">
-  <button data-filter="all" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105 active" style="background-color: #3b82f6;">عرض الكل</button>
-  <button data-filter="Old World" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105" style="background-color: #22c55e;">العالم القديم</button>
-  <button data-filter="New World" class="btn-filter px-6 py-2 text-white font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105" style="background-color: #f97316;">العالم الجديد</button>
-</div>
-
-<!-- حاوية الجدول الزمني -->
-<div id="timeline" class="flex overflow-x-auto gap-6 pb-6 pt-2" style="scroll-snap-type: x mandatory;">
-  <!-- يتم إنشاء البطاقات هنا بواسطة JavaScript -->
-</div>
-
-<!-- عنصر التلميح الذي يتبع مؤشر الفأرة -->
-<div id="tooltip" class="tooltip"></div>
-
-<script>
-  // المحتوى: بيانات العصور الأثرية
-  const data = [
-    // --- العالم القديم ---
-    {
-      title: 'العصر الحجري القديم (الباليوليثي)',
-      period: '2.5 مليون سنة – حوالي 11,650 ق.ح',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Oldowan_tools.jpg',
-      desc: 'العصر الحجري القديم: ظهور أقدم الأدوات الحجرية والفن والزخارف.',
-      source: 'https://en.wikipedia.org/wiki/Paleolithic'
-    },
-    {
-      title: 'العصر الحجري الوسيط (الميزوليتي)',
-      period: 'حوالي 15,000–5,000 ق.ح (أوراسيا)',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Mesolithic_hut.jpg',
-      desc: 'العصر الحجري الأوسط: أدوات حجرية دقيقة (ميكروليت)، مستوطنات موسمية، والتكيف مع فترة ما بعد العصر الجليدي.',
-      source: 'https://en.wikipedia.org/wiki/Mesolithic'
-    },
-    {
-      title: 'العصر الحجري الحديث (النيوليثي)',
-      period: 'حوالي 10,000–4,500 ق.م (الشرق الأدنى)',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/Skara_Brae.jpg',
-      desc: 'العصر الحجري الجديد: بداية الزراعة، صناعة الفخار، المستوطنات الدائمة، والعمارة الصخرية الضخمة.',
-      source: 'https://en.wikipedia.org/wiki/Neolithic'
-    },
-    {
-      title: 'العصر النحاسي (الكالكوليتي)',
-      period: 'حوالي 4,500–3,300 ق.م',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Copper_age_copper.jpg',
-      desc: 'فترة تعدينية مبكرة شهدت استخدام النحاس إلى جانب الأدوات الحجرية.',
-      source: 'https://en.wikipedia.org/wiki/Chalcolithic'
-    },
-    {
-      title: 'العصر البرونزي',
-      period: 'حوالي 3,300–1,200 ق.م',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/6/65/Bronze_Age_weapons.jpg',
-      desc: 'استخدام البرونز، ظهور المدن، التجارة، الكتابة، والمجتمعات الهرمية.',
-      source: 'https://en.wikipedia.org/wiki/Bronze_Age'
-    },
-    {
-      title: 'العصر الحديدي',
-      period: 'حوالي 1,200–600 ق.م',
-      realm: 'Old World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/f/fb/Iron_age_tools.jpg',
-      desc: 'أدى تعدين الحديد إلى أدوات وأسلحة أقوى، ونمو الإمبراطوريات.',
-      source: 'https://en.wikipedia.org/wiki/Iron_Age'
-    },
-    // --- العالم الجديد ---
-    {
-      title: 'المرحلة الليثية (الهنود القدامى)',
-      period: 'حوالي 16,000–8,000 ق.م',
-      realm: 'New World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/d/de/Folsom_point.jpg',
-      desc: 'أولى السكان في الأمريكتين، تميزوا بصناعة رؤوس الرماح مثل كلوفيس وفولسوم لصيد الحيوانات الضخمة.',
-      source: 'https://en.wikipedia.org/wiki/Lithic_stage'
-    },
-    {
-      title: 'العصر القديم',
-      period: 'حوالي 8,000–1,000 ق.م',
-      realm: 'New World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Bannerstone.jpg',
-      desc: 'فترة التكيف مع تغير المناخ بعد العصر الجليدي، والاعتماد على الصيد والجمع، وظهور أدوات الطحن.',
-      source: 'https://en.wikipedia.org/wiki/Archaic_period_in_the_Americas'
-    },
-    {
-      title: 'المرحلة التكوينية (وودلاند)',
-      period: 'حوالي 1,000 ق.م – 500 م',
-      realm: 'New World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Hopewell_Mound_City_Group.jpg/640px-Hopewell_Mound_City_Group.jpg',
-      desc: 'بداية الزراعة (الذرة والفاصوليا)، صناعة الفخار، بناء القرى الدائمة والتلال الترابية الاحتفالية.',
-      source: 'https://en.wikipedia.org/wiki/Formative_stage'
-    },
-    {
-      title: 'المرحلة الكلاسيكية وما بعدها',
-      period: 'حوالي 500–1521 م',
-      realm: 'New World',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Chichen_Itza_3.jpg/640px-Chichen_Itza_3.jpg',
-      desc: 'ذروة الحضارات الكبرى في أمريكا الوسطى والأنديز، مثل المايا، والأزتيك، والإنكا، مع بناء المدن العظيمة.',
-      source: 'https://en.wikipedia.org/wiki/Classic_stage'
-    }
-  ];
-
-  // الحصول على عناصر DOM الرئيسية
-  const timelineContainer = document.getElementById('timeline');
-  const tooltip = document.getElementById('tooltip');
-  const filterButtons = document.querySelectorAll('.btn-filter');
-
-  /**
-   * دالة لعرض البطاقات في الجدول الزمني بناءً على الفلتر المحدد
-   * @param {string} filter - الفلتر المراد تطبيقه ('all', 'Old World', 'New World')
-   */
-  function renderTimeline(filter) {
-    // إفراغ الحاوية قبل إعادة العرض
-    timelineContainer.innerHTML = '';
+    <!-- 1. أساسيات الصفحة والتهيئة للأجهزة -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    // فلترة البيانات بناءً على الاختيار
-    const filteredData = data.filter(item => filter === 'all' || item.realm === filter);
+    <!-- 2. عنوان الصفحة ووصفها (مهم جداً لمحركات البحث) -->
+    <title>موسوعة آركيوبيديا | بوابتك إلى عالم الآثار والتاريخ القديم</title>
+    <meta name="description" content="آركيوبيديا هي موسوعة شاملة لاستكشاف الحضارات القديمة، الشخصيات التاريخية، والمعالم الأثرية حول العالم. تعلم عن تاريخ البشرية بطريقة تفاعلية وسهلة.">
+    
+    <!-- 3. ربط الخطوط الخارجية -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- 
+      4. الأنماط المدمجة (Embedded CSS)
+      تم وضع كل أكواد CSS هنا مباشرة لتجنب الحاجة لملف styles.css خارجي.
+    -->
+    <style>
+        /* إعدادات عامة */
+        body {
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            line-height: 1.6;
+            text-align: right; /* دعم اللغة العربية */
+            background-color: #f9f9f9;
+            color: #333;
+        }
 
-    // إنشاء بطاقة لكل عنصر في البيانات المفلترة
-    filteredData.forEach(item => {
-      const card = document.createElement('div');
-      // استخدام Tailwind CSS لتنسيق البطاقة مع تأثيرات عند مرور الفأرة
-      card.className = 'relative min-w-[300px] bg-white rounded-xl shadow-lg overflow-hidden group transition-all duration-300 transform hover:-translate-y-2';
-      // لجعل التمرير الأفقي أكثر سلاسة
-      card.style.scrollSnapAlign = 'start';
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
 
-      card.innerHTML = `
-        <div class="h-48 w-full overflow-hidden">
-          <img src="${item.image}" alt="صورة لـ ${item.title}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+        /* الهيدر والتنقل */
+        .main-header {
+            background-color: #fff;
+            padding: 1rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .main-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        .main-nav ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .main-nav ul li {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        
+        .main-nav a {
+            color: #34495e;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .main-nav a:hover {
+            color: #e67e22;
+        }
+
+        /* قسم المقدمة (Hero) */
+        .hero {
+            background-color: #34495e;
+            color: #fff;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #e67e22;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #d35400;
+            transform: translateY(-2px);
+        }
+        
+        /* أقسام المحتوى والبطاقات */
+        .content-section {
+            padding: 3rem 0;
+        }
+        .content-section h2 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 2rem;
+            color: #2c3e50;
+        }
+        .bg-light {
+            background-color: #ffffff;
+        }
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover; /* تضمن أن الصورة تملأ المساحة دون تشويه */
+        }
+        .card-content {
+            padding: 1.5rem;
+        }
+        .card-content h3 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        .read-more {
+            color: #e67e22;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* قائمة الشخصيات */
+        #figures ul {
+            list-style: none;
+            padding: 0;
+            text-align: center;
+        }
+        #figures li {
+            margin-bottom: 0.5rem;
+        }
+        #figures a {
+            color: #34495e;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+        #figures a:hover {
+            text-decoration: underline;
+        }
+
+        /* التذييل (Footer) */
+        .main-footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ======== الهيدر وقائمة التنقل ======== -->
+    <header class="main-header">
+        <div class="container">
+            <a href="index.html" class="logo">آركيوبيديا</a>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#civilizations">الحضارات</a></li>
+                    <li><a href="#figures">شخصيات</a></li>
+                    <li><a href="#about">عن الموسوعة</a></li>
+                </ul>
+            </nav>
         </div>
-        <div class="p-5">
-          <h3 class="text-xl font-bold text-gray-800 truncate">${item.title}</h3>
-          <p class="text-gray-500 text-sm mt-1">${item.period}</p>
+    </header>
+
+    <!-- ======== المحتوى الرئيسي للصفحة ======== -->
+    <main>
+        <!-- ======== قسم المقدمة (Hero Section) ======== -->
+        <section class="hero">
+            <div class="container">
+                <h1>اكتشف أسرار التاريخ القديم</h1>
+                <p class="subtitle">موسوعتك لاستكشاف الحضارات العريقة والشخصيات التي شكلت عالمنا.</p>
+                <a href="#civilizations" class="cta-button">ابدأ رحلتك الآن</a>
+            </div>
+        </section>
+
+        <!-- ======== قسم تعريف بالموسوعة ======== -->
+        <section id="about" class="content-section">
+            <div class="container" style="text-align: center; max-width: 800px;">
+                <h2>ما هي آركيوبيديا؟</h2>
+                <p>آركيوبيديا ليست مجرد موقع، بل هي رحلة عبر الزمن. نحن نقدم معلومات دقيقة وموثوقة حول التاريخ القديم والآثار، مقدمة بأسلوب شيق وسهل الفهم. هدفنا هو جعل التاريخ في متناول الجميع.</p>
+            </div>
+        </section>
+
+        <!-- ======== قسم الحضارات (مع صور من ويكيبيديا) ======== -->
+        <section id="civilizations" class="content-section bg-light">
+            <div class="container">
+                <h2>أبرز الحضارات القديمة</h2>
+                <div class="grid-layout">
+                    <!-- بطاقة الحضارة السومرية -->
+                    <article class="card">
+                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز (التابع لويكيبيديا) -->
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Ziggurat_of_ur.jpg/600px-Ziggurat_of_ur.jpg" alt="معبد زقورة أور السومري">
+                        <div class="card-content">
+                            <h3>الحضارة السومرية</h3>
+                            <p>تعتبر من أقدم الحضارات في بلاد ما بين النهرين، اشتهرت باختراع الكتابة المسمارية وبناء الزقورات.</p>
+                            <a href="/civilizations/sumerian.html" class="read-more">اعرف المزيد ←</a>
+                        </div>
+                    </article>
+
+                    <!-- بطاقة الحضارة المصرية -->
+                    <article class="card">
+                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز -->
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/All_Gizah_Pyramids.jpg/600px-All_Gizah_Pyramids.jpg" alt="أهرامات الجيزة في مصر">
+                        <div class="card-content">
+                            <h3>الحضارة المصرية القديمة</h3>
+                            <p>حضارة عظيمة قامت على ضفاف النيل، تركت وراءها كنوزاً أثرية مذهلة مثل الأهرامات والمعابد الضخمة.</p>
+                            <a href="/civilizations/egyptian.html" class="read-more">اعرف المزيد ←</a>
+                        </div>
+                    </article>
+                    
+                    <!-- بطاقة حضارة وادي السند -->
+                    <article class="card">
+                        <!-- تم ربط الصورة مباشرة من ويكيميديا كومنز -->
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Mohenjo-daro_lower_town_with_stupa_in_background.jpg/600px-Mohenjo-daro_lower_town_with_stupa_in_background.jpg" alt="أطلال مدينة موهينجو دارو">
+                        <div class="card-content">
+                            <h3>حضارة وادي السند</h3>
+                            <p>واحدة من أقدم ثلاث حضارات في العالم القديم، ازدهرت في حوض نهر السند وتميزت بتخطيطها الحضري المتقدم.</p>
+                            <a href="/civilizations/indus.html" class="read-more">اعرف المزيد ←</a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== قسم الشخصيات التاريخية ======== -->
+        <section id="figures" class="content-section">
+            <div class="container">
+                <h2>شخصيات غيرت مجرى التاريخ</h2>
+                <ul>
+                    <li><a href="/figures/hammurabi.html">حمورابي</a>: ملك بابل وسادس حكامها، وصاحب المسلة الشهيرة.</li>
+                    <li><a href="/figures/cleopatra.html">كليوباترا السابعة</a>: آخر ملكات السلالة البطلمية في مصر.</li>
+                    <li><a href="/figures/alexander.html">الإسكندر الأكبر</a>: أحد أعظم القادة العسكريين في التاريخ.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <!-- ======== تذييل الصفحة (Footer) ======== -->
+    <footer class="main-footer">
+        <div class="container">
+            <p>© 2025 موسوعة آركيوبيديا. جميع الحقوق محفوظة.</p>
         </div>
-      `;
+    </footer>
 
-      // إضافة أحداث الفأرة لإظهار وإخفاء التلميح
-      card.addEventListener('mousemove', e => {
-        // تحديد موضع التلميح بجانب المؤشر
-        tooltip.style.left = e.pageX + 15 + 'px';
-        tooltip.style.top = e.pageY + 15 + 'px';
-        // إضافة المحتوى للتلميح مع رابط للمصدر
-        tooltip.innerHTML = \`
-          <strong class="font-bold block mb-1.5 text-base">${item.title}</strong>
-          <p class="text-sm leading-relaxed">${item.desc}</p>
-          <a href="${item.source}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-300 hover:underline mt-2 inline-block">المصدر</a>
-        \`;
-        // إظهار التلميح مع تأثير سلس
-        tooltip.classList.add('visible');
-      });
-
-      card.addEventListener('mouseleave', () => {
-        // إخفاء التلميح
-        tooltip.classList.remove('visible');
-      });
-
-      timelineContainer.appendChild(card);
-    });
-  }
-
-  // إضافة مستمعي الأحداث لأزرار الفلترة
-  filterButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      // إزالة الحالة "النشطة" من جميع الأزرار
-      filterButtons.forEach(btn => btn.classList.remove('active'));
-      // إضافة الحالة "النشطة" للزر المضغوط
-      button.classList.add('active');
-      
-      const filterValue = button.getAttribute('data-filter');
-      renderTimeline(filterValue);
-    });
-  });
-
-  // العرض الأولي عند تحميل الصفحة (عرض الكل)
-  renderTimeline('all');
-</script>
+    <!-- 
+      5. الجافاسكريبت المدمج (Embedded JavaScript)
+      تم وضعه في نهاية الصفحة لضمان عدم إعاقته لعملية تحميل المحتوى المرئي.
+    -->
+    <script>
+        // يمكن إضافة وظائف تفاعلية هنا مستقبلاً
+        console.log("تم تحميل موقع آركيوبيديا بنجاح!");
+    </script>
 
 </body>
 </html>
