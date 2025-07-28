@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <title>Archeopedia - خريطة المواقع الأثرية المغربية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Cairo', 'Roboto', Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #e5e5e5;
+      color: #222;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #app { width: 100vw; height: 100vh;}
+    #map {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 1;
+    }
+    .search-bar {
+      position: absolute;
+      top: 24px; left: 50%; transform: translateX(-50%);
+      width: 420px; max-width: 90vw;
+      background: #fff;
+      border-radius: 36px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+      display: flex;
+      align-items: center;
+      padding: 8px 20px;
+      z-index: 10;
+    }
+    .search-bar input {
+      border: none;
+      outline: none;
+      font-size: 1.1em;
+      flex: 1;
+      background: transparent;
+      padding: 9px 0;
+    }
+    .search-bar button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      margin-right: 6px;
+    }
+    .autocomplete-suggestions {
+      position: absolute;
+      top: 60px; left: 50%; transform: translateX(-50%);
+      width: 420px; max-width: 90vw;
+      background: #fff;
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.11);
+      z-index: 11;
+      overflow: hidden;
+    }
+    .autocomplete-suggestions div {
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: background 0.18s;
+      border-bottom: 1px solid #eee;
+      font-size: 1.05em;
+    }
+    .autocomplete-suggestions div:last-child { border: none; }
+    .autocomplete-suggestions div:hover, .autocomplete-suggestions div.active {
+      background: #f1f3f4;
+    }
+    .sidebar {
+      position: absolute;
+      top: 96px; right: 24px;
+      width: 340px; max-width: 95vw;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.11);
+      z-index: 9;
+      padding: 18px 18px 24px 18px;
+      overflow-y: auto;
+      max-height: 65vh;
+      display: none;
+      animation: fadeIn 0.2s;
+    }
+    .sidebar.open { display: block; }
+    .sidebar h2 {
+      margin: 0 0 8px 0;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .filter-bar {
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .filter-bar label { font-weight:bold; margin-right: 3px; }
+    .filter-bar select {
+      padding: 3px 8px;
+      border-radius: 7px;
+      border: 1px solid #bbb;
+      background: #f8f8f8;
+      font-size: 0.97em;
+    }
+    .site-card {
+      background: #fafafa;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: box-shadow 0.14s;
+    }
+    .site-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.09);}
+    .site-card strong { font-size: 1.08em; }
+    .site-card .info { color: #555; font-size: 0.97em; margin-top: 3px;}
+    .floating-card {
+      position: absolute;
+      bottom: 32px; left: 50%; transform: translateX(-50%);
+      min-width: 320px; max-width: 90vw;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+      z-index: 12;
+      padding: 22px 22px 10px 22px;
+      display: none;
+      animation: fadeIn 0.2s;
+    }
+    .floating-card.open { display: block; }
+    .floating-card h3 { margin: 0 0 8px 0; font-size: 1.15em; }
+    .floating-card img.site-img {
+      width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;
+      background: #eee;
+      display: block;
+    }
+    .floating-card .gallery { display: flex; gap:6px; margin-bottom:10px; flex-wrap: wrap;}
+    .floating-card .gallery img { width:80px; height:80px; object-fit:cover; border-radius:6px; background:#ddd;}
+    .floating-card table { width: 100%; border-collapse: collapse; margin-top: 6px;}
+    .floating-card th, .floating-card td { text-align: right; padding: 4px 6px; font-size: 0.97em; }
+    .floating-card th { color: #888;}
+    .floating-card .close-btn {
+      position: absolute; top: 7px; right: 13px;
+      background: none; border: none; font-size: 1.3em; color: #888; cursor: pointer;
+    }
+    .sources a { margin-right: 8px; color:#0077cc; }
+    .share-btn {
+      background: #0077cc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top:10px;
+      margin-right:10px;
+      transition: background 0.18s;
+    }
+    .share-btn:hover { background: #005fa3;}
+    .gm-controls {
+      position: absolute;
+      bottom: 24px; right: 24px;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .gm-btn {
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      border: none;
+      width: 48px; height: 48px;
+      font-size: 1.3em;
+      color: #333;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s;
+    }
+    .gm-btn:hover { background: #f1f3f4;}
+    @media (max-width: 600px) {
+      .sidebar { top: 80px; right: 5vw; width: 95vw; border-radius: 14px;}
+      .search-bar, .autocomplete-suggestions { width: 98vw; max-width: 98vw;}
+      .floating-card { min-width: 80vw; padding: 18px 9vw 10px 9vw;}
+      .filter-bar { flex-direction:column; gap:7px;}
+    }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    /* صفحة التفاصيل المستقلة */
+    #detailPage {
+      display:none;
+      position: absolute;
+      top:0; left:0; width:100vw; height:100vh; z-index:20;
+      background:#f5f5f5;
+      overflow-y:auto;
+    }
+    #detailContainer {
+      max-width: 800px; margin: 32px auto;
+      background: #fff; border-radius: 16px;
+      box-shadow:0 2px 12px #aaa2;
+      padding: 32px;
+      position:relative;
+    }
+    #detailMap { height: 300px; border-radius:12px; margin-bottom:22px;}
+    #detailGallery { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+    #detailGallery img { width:90px; height:90px; object-fit:cover; border-radius:8px; background:#eee;}
+    #detailImg { max-width:100%; max-height:240px; border-radius:12px; margin-bottom:16px; background:#eee;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <div class="search-bar">
+    <button title="القائمة" onclick="toggleSidebar()"><span>☰</span></button>
+    <input type="text" id="searchBox" placeholder="ابحث عن موقع أثري..." autocomplete="off" />
+    <button title="بحث" onclick="triggerSearch()"><span>🔍</span></button>
+  </div>
+  <div id="searchSuggestions" class="autocomplete-suggestions"></div>
+  <div id="sidebar" class="sidebar">
+    <h2>كل المواقع</h2>
+    <div class="filter-bar">
+      <label for="periodFilter">الفترة:</label>
+      <select id="periodFilter"><option value="">الكل</option></select>
+      <label for="regionFilter">الجهة:</label>
+      <select id="regionFilter"><option value="">الكل</option></select>
+      <label for="typeFilter">النوع:</label>
+      <select id="typeFilter"><option value="">الكل</option></select>
+    </div>
+    <div id="siteList"></div>
+  </div>
+  <div id="floatingCard" class="floating-card">
+    <button class="close-btn" onclick="closeCard()">✖</button>
+    <h3 id="cardTitle"></h3>
+    <img id="cardImage" class="site-img" alt="" style="display:none;">
+    <div class="gallery" id="cardGallery"></div>
+    <div id="wikiSummary"></div>
+    <div class="sources" id="wikiLinks"></div>
+    <table id="cardTable"></table>
+    <button class="share-btn" onclick="shareSite()">مشاركة الموقع</button>
+    <button class="share-btn" onclick="openDetailPage()">صفحة التفاصيل</button>
+  </div>
+  <div class="gm-controls">
+    <button class="gm-btn" title="تكبير" onclick="zoomIn()">＋</button>
+    <button class="gm-btn" title="تصغير" onclick="zoomOut()">－</button>
+    <button class="gm-btn" title="موقعي" onclick="locateMe()">📍</button>
+    <button class="gm-btn" title="إعادة ضبط" onclick="resetMap()">⟳</button>
+  </div>
+  <!-- صفحة التفاصيل المستقلة -->
+  <div id="detailPage">
+    <div id="detailContainer">
+      <button class="share-btn" onclick="closeDetailPage()" style="position:absolute;top:18px;left:18px;">⬅ عودة للخريطة</button>
+      <h1 id="detailTitle"></h1>
+      <img id="detailImg" alt="" style="display:none;">
+      <div id="detailGallery"></div>
+      <div id="detailSummary"></div>
+      <div class="sources" id="detailLinks"></div>
+      <div id="detailMap"></div>
+      <table id="detailTable"></table>
+      <button class="share-btn" onclick="shareSite(true)">مشاركة الموقع</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+<script>
+  // --- بيانات المواقع الأثرية: عدل أو أضف مواقع هنا مباشرة ---
+  const rawData = [
+    { site:"Volubilis", lat:34.073, lng:-5.561, periods:"روماني", region:"فاس-مكناس", type:"مدينة أثرية" },
+    { site:"ليكسوس", lat:35.174, lng:-5.457, periods:"فينيقي-روماني", region:"طنجة-تطوان", type:"مدينة أثرية" },
+    { site:"شالة", lat:34.000, lng:-6.814, periods:"روماني-إسلامي", region:"الرباط-سلا", type:"مدفن ملكي" },
+    // أضف المزيد هنا
+  ];
+  // --- END البيانات ---
+
+  let markers = [], suggestions = [];
+  let periodSet = new Set(), regionSet = new Set(), typeSet = new Set();
+  let currentSite = null, galleryImages = [];
+
+  // SPA: إدارة التنقل الداخلي (خريطة/تفاصيل)
+  function openDetailPage(site=null) {
+    document.getElementById('detailPage').style.display='block';
+    if (!site && currentSite) site = currentSite;
+    renderDetailPage(site);
+    window.history.pushState({page:'detail',site:site.site}, "", "?site="+encodeURIComponent(site.site));
+  }
+  function closeDetailPage() {
+    document.getElementById('detailPage').style.display='none';
+    window.history.pushState({page:'home'}, "", "?");
+  }
+  window.onpopstate = function(e) {
+    if (e.state && e.state.page=='detail') {
+      document.getElementById('detailPage').style.display='block';
+    } else {
+      document.getElementById('detailPage').style.display='none';
+    }
+  };
+
+  // --- MAP INIT ---
+  const map = L.map('map', { center: [31.5, -7], zoom: 6, zoomControl: false });
+  const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri' }).addTo(map);
+
+  function init() {
+    suggestions = rawData.map(s => s.site.toLowerCase());
+    periodSet = new Set(rawData.map(s=>s.periods).filter(Boolean));
+    regionSet = new Set(rawData.map(s=>s.region).filter(Boolean));
+    typeSet = new Set(rawData.map(s=>s.type).filter(Boolean));
+    updateFilters();
+    populateSidebar(rawData);
+    addMarkers(rawData);
+    setupAutocomplete();
+    checkUrlForSite();
+  }
+
+  function updateFilters() {
+    document.getElementById('periodFilter').innerHTML =
+      '<option value="">الكل</option>' + Array.from(periodSet).map(p=>`<option value="${p}">${p}</option>`).join('');
+    document.getElementById('regionFilter').innerHTML =
+      '<option value="">الكل</option>' + Array.from(regionSet).map(r=>`<option value="${r}">${r}</option>`).join('');
+    document.getElementById('typeFilter').innerHTML =
+      '<option value="">الكل</option>' + Array.from(typeSet).map(t=>`<option value="${t}">${t}</option>`).join('');
+  }
+
+  function filterData() {
+    const period = document.getElementById('periodFilter').value;
+    const region = document.getElementById('regionFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    let filtered = rawData.filter(s =>
+      (!period || s.periods === period) &&
+      (!region || s.region === region) &&
+      (!type || s.type === type)
+    );
+    return filtered;
+  }
+
+  function addMarkers(data) {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    data.forEach(site => {
+      if (!site.lat || !site.lng) return;
+      const marker = L.marker([+site.lat, +site.lng], {title:site.site});
+      marker.on('click', () => showFloatingCard(site));
+      marker.addTo(map);
+      markers.push(marker);
+    });
+  }
+
+  function populateSidebar(data) {
+    const list = document.getElementById('siteList');
+    list.innerHTML = '';
+    data.forEach(site => {
+      const div = document.createElement('div');
+      div.className = 'site-card';
+      div.innerHTML = `<strong>${site.site}</strong>
+        <div class="info">${site.periods || ''} - ${site.region || ''} - ${site.type || ''}</div>`;
+      div.onclick = () => {
+        showFloatingCard(site);
+        closeSidebar();
+        map.setView([+site.lat, +site.lng], 12);
+      };
+      list.appendChild(div);
+    });
+  }
+
+  // --- SEARCH AUTOCOMPLETE ---
+  function setupAutocomplete() {
+    const searchBox = document.getElementById('searchBox');
+    const suggestionsBox = document.getElementById('searchSuggestions');
+    let selectedIndex = -1;
+    searchBox.addEventListener('input', function() {
+      const value = searchBox.value.toLowerCase();
+      suggestionsBox.innerHTML = '';
+      selectedIndex = -1;
+      if (value.length < 2) {
+        suggestionsBox.style.display = 'none';
+        return;
+      }
+      const filtered = suggestions.filter(s => s.includes(value)).slice(0, 8);
+      if (filtered.length === 0) {
+        suggestionsBox.innerHTML = '<div>لا توجد اقتراحات.</div>';
+        suggestionsBox.style.display = 'block';
+        return;
+      }
+      suggestionsBox.style.display = 'block';
+      filtered.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.textContent = s;
+        div.className = i === selectedIndex ? 'active' : '';
+        div.onclick = () => {
+          searchBox.value = s;
+          suggestionsBox.innerHTML = '';
+          suggestionsBox.style.display = 'none';
+          triggerSearch();
+        };
+        div.onmouseenter = () => {
+          selectedIndex = i;
+          highlightSuggestions();
+        };
+        suggestionsBox.appendChild(div);
+      });
+    });
+    searchBox.addEventListener('blur', () => {
+      setTimeout(() => {
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.style.display = 'none';
+      }, 120);
+    });
+    searchBox.addEventListener('keydown', (e) => {
+      const items = suggestionsBox.querySelectorAll('div');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        selectedIndex = (selectedIndex + 1) % items.length;
+        highlightSuggestions();
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+        highlightSuggestions();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        if (selectedIndex >= 0) {
+          searchBox.value = items[selectedIndex].textContent;
+          suggestionsBox.innerHTML = '';
+          suggestionsBox.style.display = 'none';
+          triggerSearch();
+          e.preventDefault();
+        } else {
+          triggerSearch();
+        }
+      } else if (e.key === 'Escape') {
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.style.display = 'none';
+      }
+    });
+    function highlightSuggestions() {
+      const items = suggestionsBox.querySelectorAll('div');
+      items.forEach((item, i) => {
+        item.className = (i === selectedIndex) ? 'active' : '';
+      });
+    }
+  }
+  function triggerSearch() {
+    const term = document.getElementById('searchBox').value.toLowerCase();
+    const filtered = filterData().filter(s => s.site.toLowerCase().includes(term));
+    populateSidebar(filtered);
+    addMarkers(filtered);
+    openSidebar();
+  }
+
+  // --- SIDEBAR CONTROL ---
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open')) closeSidebar();
+    else openSidebar();
+  }
+  function openSidebar() { document.getElementById('sidebar').classList.add('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
+
+  // --- FILTERS EVENT ---
+  document.getElementById('periodFilter').addEventListener('change', applyFilters);
+  document.getElementById('regionFilter').addEventListener('change', applyFilters);
+  document.getElementById('typeFilter').addEventListener('change', applyFilters);
+
+  function applyFilters() {
+    const filtered = filterData();
+    populateSidebar(filtered);
+    addMarkers(filtered);
+  }
+
+  // --- FLOATING CARD ---
+  function showFloatingCard(site) {
+    currentSite = site;
+    document.getElementById('cardTitle').textContent = site.site;
+    const table = document.getElementById('cardTable');
+    table.innerHTML = '';
+    for (const key in site) {
+      if (!site[key] || key === 'img') continue;
+      const row = document.createElement('tr');
+      row.innerHTML = `<th>${key}</th><td>${site[key]}</td>`;
+      table.appendChild(row);
+    }
+    document.getElementById('cardGallery').innerHTML = '';
+    document.getElementById('cardImage').style.display='none';
+    fetchWikiData(site.site, false);
+    document.getElementById('floatingCard').classList.add('open');
+  }
+  function closeCard() {
+    document.getElementById('floatingCard').classList.remove('open');
+  }
+
+  // --- MAP CONTROLS ---
+  function zoomIn() { map.setZoom(map.getZoom() + 1); }
+  function zoomOut() { map.setZoom(map.getZoom() - 1); }
+  function resetMap() {
+    map.setView([31.5, -7], 6);
+    addMarkers(rawData);
+    closeCard();
+  }
+  function locateMe() {
+    if (!navigator.geolocation) {
+      alert('متصفحك لا يدعم تحديد الموقع.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      map.setView([lat, lng], 14);
+      L.marker([lat, lng]).addTo(map).bindPopup('موقعي الحالي').openPopup();
+    }, () => {
+      alert('تعذر تحديد الموقع.');
+    });
+  }
+
+  function shareSite(detail=false) {
+    const site = detail ? currentSite : currentSite;
+    if (!site) return;
+    let url = window.location.origin + window.location.pathname + "?site=" + encodeURIComponent(site.site);
+    if (navigator.share) {
+      navigator.share({
+        title: site.site,
+        url: url,
+        text: 'تعرف على الموقع الأثري المغربي: ' + site.site
+      });
+    } else {
+      prompt('انسخ رابط الموقع وشاركه:', url);
+    }
+  }
+
+  // --- جلب بيانات ويكيبيديا/ويكيداتا/ويكيميديا تلقائياً ---
+  async function fetchWikiData(siteName, isDetailPage=false) {
+    let wikiLangs = ["ar", "fr", "en"];
+    let found = false;
+    let summaryDiv = isDetailPage ? document.getElementById('detailSummary') : document.getElementById('wikiSummary');
+    let linksDiv = isDetailPage ? document.getElementById('detailLinks') : document.getElementById('wikiLinks');
+    let imgTag = isDetailPage ? document.getElementById('detailImg') : document.getElementById('cardImage');
+    let galleryDiv = isDetailPage ? document.getElementById('detailGallery') : document.getElementById('cardGallery');
+    summaryDiv.innerHTML = '';
+    linksDiv.innerHTML = '';
+    imgTag.style.display = 'none';
+    galleryDiv.innerHTML = '';
+    for (let lang of wikiLangs) {
+      let wikiApi = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(siteName)}`;
+      try {
+        let res = await fetch(wikiApi);
+        if (res.ok) {
+          let data = await res.json();
+          if (data.extract) {
+            summaryDiv.innerHTML = data.extract;
+            let links = `<a href="${data.content_urls.desktop.page}" target="_blank">ويكيبيديا (${lang})</a>`;
+            if (data.wikidata) {
+              links += ` | <a href="https://www.wikidata.org/wiki/${data.wikidata}" target="_blank">ويكيداتا</a>`;
+              fetchCommonsMedia(data.wikidata, imgTag, galleryDiv);
+            }
+            linksDiv.innerHTML = links;
+            found = true;
+            break;
+          }
+        }
+      } catch {}
+    }
+    if (!found) {
+      summaryDiv.innerHTML = "لا يوجد وصف متاح من ويكيبيديا.";
+      linksDiv.innerHTML = "";
+      imgTag.style.display = "none";
+      galleryDiv.innerHTML = "";
+    }
+  }
+
+  // جلب صورة ومعرض صور من ويكيميديا كومنز عبر معرف ويكيداتا
+  async function fetchCommonsMedia(wikidataId, imgTag, galleryDiv) {
+    try {
+      let wdApi = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
+      let res = await fetch(wdApi);
+      let data = await res.json();
+      let entity = data.entities[wikidataId];
+      // صورة رئيسية (P18)
+      if (entity.claims && entity.claims.P18) {
+        let imgName = entity.claims.P18[0].mainsnak.datavalue.value;
+        let imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imgName)}?width=400`;
+        imgTag.src = imgUrl;
+        imgTag.style.display = 'block';
+        imgTag.alt = imgName;
+      } else {
+        imgTag.style.display = "none";
+      }
+      // معرض صور (P18 متعددة أو P948 مصغرات)
+      let gallery = [];
+      if (entity.claims.P18 && entity.claims.P18.length > 1) {
+        entity.claims.P18.forEach(claim=>{
+          let name = claim.mainsnak.datavalue.value;
+          gallery.push(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}?width=120`);
+        });
+      }
+      if (entity.claims.P948) {
+        entity.claims.P948.forEach(claim=>{
+          let name = claim.mainsnak.datavalue.value;
+          gallery.push(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}?width=120`);
+        });
+      }
+      galleryDiv.innerHTML = '';
+      gallery.forEach(url=>{
+        let img = document.createElement('img');
+        img.src = url;
+        galleryDiv.appendChild(img);
+      });
+    } catch {
+      imgTag.style.display = "none";
+      galleryDiv.innerHTML = "";
+    }
+  }
+
+  // --- صفحة التفاصيل المستقلة لكل موقع ---
+  function renderDetailPage(site) {
+    if (!site) return;
+    document.getElementById('detailTitle').textContent = site.site;
+    const table = document.getElementById('detailTable');
+    table.innerHTML = '';
+    for (const key in site) {
+      if (!site[key] || key === 'img') continue;
+      const row = document.createElement('tr');
+      row.innerHTML = `<th>${key}</th><td>${site[key]}</td>`;
+      table.appendChild(row);
+    }
+    // خريطة
+    if (site.lat && site.lng) {
+      const mapDiv = document.getElementById('detailMap');
+      mapDiv.innerHTML = '';
+      setTimeout(()=>{
+        const detailMap = L.map(mapDiv).setView([+site.lat, +site.lng], 13);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Esri'
+        }).addTo(detailMap);
+        L.marker([+site.lat, +site.lng]).addTo(detailMap);
+        detailMap.invalidateSize();
+      },80);
+    }
+    // جلب بيانات ويكي
+    fetchWikiData(site.site, true);
+  }
+
+  // --- دعم SPA: فحص الرابط لعرض تفاصيل الموقع تلقائياً ---
+  function checkUrlForSite() {
+    let urlParams = new URLSearchParams(window.location.search);
+    let siteName = urlParams.get("site");
+    if (siteName) {
+      let site = rawData.find(s=>s.site.toLowerCase() === siteName.toLowerCase());
+      if (site) {
+        currentSite = site;
+        openDetailPage(site);
+      }
+    }
+  }
+
+  // --- INIT ---
+  window.onload = init;
+</script>
+</body>
+</html>
