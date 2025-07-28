@@ -1,273 +1,1160 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Archeopedia - Moroccan Archaeological Sites</title>
-  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #eaeaea;
-    }
-    header, footer {
-      background: #fff;
-      padding: 1em;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    nav {
-      display: flex;
-      justify-content: center;
-      background: #333;
-      color: #fff;
-      padding: 0.5em;
-    }
-    nav a {
-      margin: 0 1em;
-      color: #fff;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .container {
-      display: flex;
-      height: calc(100vh - 160px);
-    }
-    #map {
-      width: 70%;
-      height: 100%;
-    }
-    #sidebar {
-      width: 30%;
-      height: 100%;
-      overflow-y: auto;
-      padding: 1em;
-      background: #fefefe;
-      border-left: 1px solid #ccc;
-    }
-    .site-card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 1em;
-      margin-bottom: 1em;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-    .site-card:hover {
-      transform: scale(1.02);
-    }
-    .search input {
-      width: 100%;
-      padding: 0.75em;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1em;
-    }
-    .autocomplete-suggestions {
-      background: #fff;
-      border: 1px solid #ccc;
-      position: absolute;
-      z-index: 1000;
-      width: 100%;
-      max-height: 200px;
-      overflow-y: auto;
-      border-radius: 0 0 8px 8px;
-    }
-    .autocomplete-suggestions div {
-      padding: 0.5em;
-      cursor: pointer;
-    }
-    .autocomplete-suggestions div:hover {
-      background-color: #f0f0f0;
-    }
-    .detail-page {
-      padding: 2em;
-      max-width: 900px;
-      margin: auto;
-      background: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .detail-map {
-      height: 350px;
-      margin: 1em 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 0.75em;
-      border: 1px solid #ddd;
-    }
-    th {
-      background: #f4f4f4;
-      text-align: left;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>🌍 Archeopedia: Moroccan Archaeological Atlas</h1>
-    <p>Powered by Xronos | Inspired by Google Earth Studio and Google Places</p>
-  </header>
-  <nav>
-    <a href="#" onclick="showHome()">🏠 Home Map</a>
-    <a href="#" onclick="showList()">📋 All Sites</a>
-  </nav>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+      Tell Halula 
+       &ndash; 
+      XRONOS
+    </title>
 
-  <div id="home" class="container">
-    <div id="map"></div>
-    <div id="sidebar">
-      <div class="search">
-        <input type="text" id="searchBox" placeholder="🔍 Search for a site...">
-        <div id="searchSuggestions" class="autocomplete-suggestions"></div>
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="-SaCFeCF2ej4RnOl9eV4KwVbkuJLQ0E15Dug6jwJBVVop1-j2sGPGc2FcmBDea61bqQLZPyfli49VCvhXLOinA" />
+    
+
+    <meta name="description" content="Chronometric data for Tell Halula, an archaeological site in Syrian Arab Republic, including 59 radiocarbon dates, 21 typological classifications, and 12 bibliographic references.">
+
+    <link rel="stylesheet" href="/assets/application-32d26b64.css" data-turbo-track="reload" />
+    <link rel="stylesheet" href="/assets/frontend-9eaff333.css" data-turbo-track="reload" />
+    
+
+    <script src="/assets/application-3f501e25.js" data-turbo-track="reload" defer="defer"></script>
+
+      <script async src="https://analytics.xronos.ch/script.js" data-website-id="e5a03dd9-a74b-4246-834b-988b0a7a1247"></script>
+
+    
+
+    <link rel="icon" type="image/x-icon" href="/assets/favicon-eb6cbfaf.ico" />
+  </head>
+
+  <body class="min-vh-100 d-flex flex-column">
+
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 9999">
+    </div>
+
+    <turbo-frame id="remote_modal" target="_top"></turbo-frame>
+
+    
+
+    <nav class="navbar navbar-expand-lg sticky-top text-bg-primary mb-0 main-nav shadow"
+     data-bs-theme="light"
+>
+
+     <div class="container-fluid">
+
+       <a class="navbar-brand" href="/">
+         <img alt="XRONOS" style="max-height: 1.5rem" src="/assets/xronos_logo_light-d276f1c7.svg" />
+       </a>
+
+       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+         <span class="navbar-toggler-icon"></span>
+       </button>
+
+       <div class="collapse navbar-collapse" id="navbarSupportedContent">
+         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+           <li class="nav-item">
+             <a class="nav-link link-info " href="/data" >Browse data</a>
+           </li>
+           <li class="nav-item dropdown">
+             <a class="nav-link link-info dropdown-toggle" href="#" id="aboutDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+               About
+             </a>
+             <ul class="dropdown-menu" aria-labelledby="aboutDropdown">
+                 <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/contact">
+      Contact us
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/acknowledgements">
+      Acknowledgements
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/disclaimer">
+      Disclaimer
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/research">
+      Research
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/xronos">
+      What is XRONOS?
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="dropdown-item nav-link" href="/about/contribute">
+      Contribute
+    </a>
+  </li>
+
+             </ul>
+           </li>
+           <li class="nav-item dropdown">
+             <a class="nav-link link-info dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+               Tools
+             </a>
+             <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+               <li class="nav-item">
+                 <a class="nav-link dropdown-item " href="/database" >Schema</a>
+               </li>
+               <li class="nav-item">
+                 <a class="nav-link dropdown-item " href="/api" >API</a>
+               </li>
+               <li class="nav-item">
+                 <a class="nav-link dropdown-item" href="https://r.xronos.ch" target="_blank">R package <span class="badge"><i class="bi-box-arrow-up-right"></i></span></a>
+               </li>
+             </ul>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link link-info" href="/news">News</a>
+           </li>
+         </ul>
+
+         <form id="navbarSearch"
+               data-home-hero-target="search"
+               class="me-3" 
+               role="search"
+               action="/search"
+               method="get">
+           <div class="input-group">
+             <input class="form-control form-control-sm" type="search" name="q" placeholder="Find dates, sites, references..." aria-label="Search">
+             <button class="btn btn-sm btn-info" type="submit">
+               <i class="bi-search"></i>
+               Search
+             </button>
+           </div>
+         </form>
+
+         <div class="d-flex">
+             <div class="dropdown">
+               <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                 Sign in
+               </button>
+
+               <div class="dropdown-menu dropdown-menu-lg-end" aria-labelledby="dropdownMenuLink" style="width: 300px">
+                 <form data-turbo="false" class="px-4" action="/users/sign_in" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="-jnjRUbf0gHrHahxYcEAePO8F64-r1s4foszDbkbYzD61NuCnwvXi5ID4KUHUOHpAM8YiFw2ldVLRwSDBizXmQ" autocomplete="off" />
+                   <div class="form-group">
+                     <label class="sr-only col-form-label col-form-label-sm" for="user_email">Email</label>
+                     <div class="input-group">
+                       <div class="input-group-text" style="width: 35px;"><i class="bi-person"></i></div>
+                       <input class="form-control form-control-sm" placeholder="email@example.com" type="text" name="user[email]" id="user_email" />
+                     </div>
+                   </div>
+                   <div class="form-group">
+                     <label class="sr-only col-form-label col-form-label-sm" for="user_password">Password</label>
+                     <div class="input-group">
+                       <div class="input-group-text" style="width: 35px;"><i class="bi-key-fill"></i></div>
+                       <input class="form-control form-control-sm" placeholder="password" type="password" name="user[password]" id="user_password" />
+                     </div>
+                   </div>
+                   <div class="form-check" style="display: inline-block;">
+                     <input name="user[remember_me]" type="hidden" value="0" autocomplete="off" /><input class="form-check-input form-check-input-sm" type="checkbox" value="1" name="user[remember_me]" id="user_remember_me" />
+                     <label class="form-check-label col-form-label-sm" for="user_remember_me">Remember me</label>
+                   </div>
+                   <input type="submit" name="commit" value="Sign in" class="btn btn-primary btn-sm pull-right" data-disable-with="Sign in" />
+</form>                 <!-- <div class="dropdown-divider"></div>
+                   <a class="dropdown-item" href="/users/password/new">Forgot your password?</a>
+                   <a class="dropdown-item" href="/users/sign_up">New around here? Sign up</a> -->
+               </div>
+             </div>
+         </div>
+       </div>
+     </div>
+</nav>
+
+
+    
+<main class="container my-5">
+
+  <header id="site-header">
+  <div class="d-flex">
+    <h1 class="display-3">Tell Halula</h1>
+  </div>
+
+  <div class="h5">
+    <img style="width: auto; height: 1.25rem;" alt="Site" width="72" height="72" src="/assets/icons/site-c07578f5.svg" />
+    Archaeological site
+    in   Syrian Arab Republic
+
+  </div>
+
+
+  <div class="my-3">
+    <div>
+  <small class="text-muted">
+
+    Record created in XRONOS on 2022-12-02 00:50:45 UTC.
+    Last updated on 2022-12-02 00:50:45 UTC.
+      <a href="#changelog">See changelog for details</a>.
+
+      <br>Contributors:
+          <a href="/contributors/2">XRONOS development team</a>
+
+  </small>
+</div>
+
+  </div>
+
+</header>
+
+
+  <section id="site-types" class="my-5">
+    <dt>Site types</dt>
+    <dd>
+        Settlement and 
+    </dd>
+  </section>
+
+  <section id="site-location" class="my-5">
+    <h2><i class="bi-pin-map"></i> Location</h2>
+    <div class="row">
+
+      <div class="col-lg-8">
+          <div style="height: 30rem; position: relative;"
+               data-controller="map"
+               data-map-style-value="show_site"
+               data-map-target="container"
+               data-map-base-map-value="Imagery"
+               data-map-markers-data-value='[{"id":35597,"name":"Tell Halula","lat":"36.4167","lng":"38.1667","created_at":"2022-12-02T00:50:45.000Z","updated_at":"2022-12-02T00:50:45.000Z","country_code":"SY","superseded_by":null}]'>
+          </div>
       </div>
-      <div id="siteList"></div>
-      <button onclick="resetMap()" style="margin-top: 1em;">🔄 Reset Map</button>
+
+      <div class="col-lg-4">
+        <dl>
+          <dt>Coordinates (degrees)</dt>
+          <dd class="font-monospace">
+            036.417° N, 038.167° E
+          </dd>
+
+          <dt>Coordinates (<abbr title="Degrees, minutes, seconds">DMS</abbr>)</dt>
+          <dd class="font-monospace">
+            036° 25&#39; 00&quot; E, 038° 10&#39; 00&quot; N
+          </dd>
+
+          <dt>Country (<a href="https://www.iso.org/iso-3166-country-codes.html">ISO&nbsp;3166</a>)</dt>
+          <dd class="font-monospace">
+              Syrian Arab Republic
+
+            (SY)
+          </dd>
+        </dl>
+      </div>
+
     </div>
-  </div>
+  </section>
 
-  <div id="listView" style="display:none; padding:2em;">
-    <h2>🗂️ Complete Site List</h2>
-    <div class="search">
-      <input type="text" id="listSearch" placeholder="Search by name...">
-      <div id="listSuggestions" class="autocomplete-suggestions"></div>
+  <section id="site-external-links" class="bg-white p-3 my-5 border rounded shadow-sm">
+    <h3 class="text-muted mb-3">
+      <i class="bi-link-45deg"></i> Linked Data
+    </h3>
+
+      <div class="d-flex align-items-center justify-content-between">
+        <turbo-frame id="lod_link_564" src="/lod_links/564"></turbo-frame>
+      </div>
+  </section>
+
+    <section id="site-c14s" class="my-5">
+      <div id="sites-c14s-toolbar" class="d-flex">
+        <h2>
+          <img style="width: auto; height: 2rem" alt="radiocarbon date" width="72" height="72" src="/assets/icons/c14-a5363bef.svg" />
+          Radiocarbon dates
+          <small class="text-muted">(59)</small>
+        </h2>
+        <div class="ms-auto">
+          <a class="btn btn-sm btn-outline-primary" title="Download CSV" href="/c14s.csv?c14%5Bsample%5D%5Bcontexts%5D%5Bsite_id%5D=35597"><i class="bi-download"></i></a>
+        </div>
+      </div>
+
+      <turbo-frame id="site-c14s-table">
+        <table class="responsive nowrap table table-hover align-middle">
+  <thead>
+    <tr>
+      <th scope="col">
+        <a data-turbo-action="advance" href="/sites/35597?c14s_order=asc&amp;c14s_order_by=lab_identifier">Lab ID</a>
+      </th>
+      <th scope="col">Context</th>
+      <th scope="col">Material</th>
+      <th scope="col">Taxon</th>
+      <th scope="col">
+        <a data-turbo-action="advance" href="/sites/35597?c14s_order=asc&amp;c14s_order_by=method">Method</a>
+      </th>
+      <th scope="col" class="text-end">
+        <a data-turbo-action="advance" href="/sites/35597?c14s_order=asc&amp;c14s_order_by=bp">Uncalibrated age</a>
+      </th>
+      <th scope="col" class="text-end">Calibrated age</th>
+      <th scope="col" class="text-end">References</th>
+    </tr>
+  </thead>
+
+  <tbody>
+      <tr>
+        <td><a target="_top" href="/c14s/147953">Beta-101602</a></td>
+        <td>Nivel: S2/4-II, sector IV, C, E51 (B)</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8630±70 BP</td>
+		<td class="text-end font-monospace">
+			9886–9485 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/147954">Beta-101603</a></td>
+        <td>Nivel: S2/4-IX, sector IV, C, A12</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8710±70 BP</td>
+		<td class="text-end font-monospace">
+			10108–9537 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/147955">Beta-101604</a></td>
+        <td>Nivel:S2/4-IX?; sector IV, D, A2g</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8310±110 BP</td>
+		<td class="text-end font-monospace">
+			9523–9024 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/147956">Beta-101605</a></td>
+        <td>Nivel: S2/4-XIII, secotr: II, D. A10c</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">13860±120 BP</td>
+		<td class="text-end font-monospace">
+			17093–16425 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/147957">Beta-101606</a></td>
+        <td>Nivel; S2/4-XI, sector II, D, E24</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8450±100 BP</td>
+		<td class="text-end font-monospace">
+			9600–9132 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148022">Beta-121012</a></td>
+        <td>Nivel: S2/4-XII, S2-4, 4D, D3a</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8600±60 BP</td>
+		<td class="text-end font-monospace">
+			9695–9480 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148195">Beta-197724</a></td>
+        <td>Proto-Halaf</td>
+        <td></td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">7180±60 BP</td>
+		<td class="text-end font-monospace">
+			8170–7866 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Cruells+2008%3B+CalPal%3B+Flohr+et+al.+2016">Cruells 2008; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148196">Beta-197725</a></td>
+        <td>Proto-Halaf</td>
+        <td></td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">7220±70 BP</td>
+		<td class="text-end font-monospace">
+			8179–7880 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Cruells+2008%3B+CalPal%3B+Flohr+et+al.+2016">Cruells 2008; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148214">Beta-206820</a></td>
+        <td>Nivel: S2/4-XI, sector S2-4, 4H, E84</td>
+        <td>seeds</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8460±40 BP</td>
+		<td class="text-end font-monospace">
+			9534–9435 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148215">Beta-206821</a></td>
+        <td>Nivel: S2/4-XII, sector S2-4, 4J, E59</td>
+        <td>seeds</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8490±40 BP</td>
+		<td class="text-end font-monospace">
+			9539–9460 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148216">Beta-206822</a></td>
+        <td>Nivel: S2/4-X, sector S2-4, 4I?, E28?</td>
+        <td>seeds</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8500±50 BP</td>
+		<td class="text-end font-monospace">
+			9543–9450 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148217">Beta-206824</a></td>
+        <td>Nivel: S2/4-XIV, S2-4, 4J, A10</td>
+        <td>seeds</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8270±50 BP</td>
+		<td class="text-end font-monospace">
+			9425–9033 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148218">Beta-206825</a></td>
+        <td>Nivel: S2/4-XIII, sector: S2-4, 4J, A18a</td>
+        <td>seeds</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8370±50 BP</td>
+		<td class="text-end font-monospace">
+			9522–9157 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148219">Beta-206826</a></td>
+        <td>Nivel: S2/4-XII, sector S2-4, 4H, A13</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8340±130 BP</td>
+		<td class="text-end font-monospace">
+			9534–9025 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148220">Beta-206827</a></td>
+        <td>Nivel: S2/4-XI, sector S2-4, 4H, A24</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8200±160 BP</td>
+		<td class="text-end font-monospace">
+			9523–8650 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148221">Beta-206829</a></td>
+        <td>Nivel: S2/4-VIII, S2-4, 4D, E105</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8500±40 BP</td>
+		<td class="text-end font-monospace">
+			9540–9465 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+et+al.+2013%3B+Benz+2014">Molist et al. 2013; Benz 2014</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148614">Beta-50856</a></td>
+        <td>Nivel; S2B/C-III, sector I A, B2; Late PPNB; sector IA, B2 (upper part sector II)</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8655±75 BP</td>
+		<td class="text-end font-monospace">
+			9893–9500 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+1996%3B+Benz+2014%3B+CalPal%3B+Flohr+et+al.+2016">Molist 1996; Benz 2014; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148615">Beta-50857</a></td>
+        <td>Nivel: 2B/C-II, sector IA, B3C; Late PPNB; sector IA, B3C (upper part sector II)</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8300±60 BP</td>
+		<td class="text-end font-monospace">
+			9464–9037 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Molist+1996%3B+Benz+2014%3B+CalPal%3B+Flohr+et+al.+2016">Molist 1996; Benz 2014; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148639">Beta-58925</a></td>
+        <td>pre-Halaf;SS 7 A, A14b; Pre-Halaf; SS 7 A, A14b</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">7880±120 BP</td>
+		<td class="text-end font-monospace">
+			9004–8430 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Benz+et+al.+2014%3B+CalPal%3B+Flohr+et+al.+2016">Benz et al. 2014; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/c14s/148640">Beta-58928</a></td>
+        <td>sector IV B, C1 f; Middle PPNB; sector IV, C1f</td>
+        <td>charcoal</td>
+        <td>  <abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr>
+</td>
+        <td><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="text-end font-monospace">8700±60 BP</td>
+		<td class="text-end font-monospace">
+			9891–9541 cal BP
+		</td>
+		<td class="text-end small">      <a href="#ref-Pinhasi+et+al.+2005%3B+CalPal%3B+Flohr+et+al.+2016">Pinhasi et al. 2005; CalPal; Flohr et al. 2016</a>
+      <a href="#ref-NERD">Palmisano et al. 2022</a>
+</td>
+      </tr>
+  </tbody>
+</table>
+
+          <nav class="pagy-bootstrap-nav"><ul class="pagination"><li class="page-item prev disabled"><a href="#" class="page-link">&lsaquo;&nbsp;Prev</a></li><li class="page-item active"><a href="/sites/35597?c14s_page=1" data-turbo-action="advance" class="page-link"  >1</a></li><li class="page-item"><a href="/sites/35597?c14s_page=2" data-turbo-action="advance" class="page-link"  rel="next" >2</a></li><li class="page-item"><a href="/sites/35597?c14s_page=3" data-turbo-action="advance" class="page-link"  >3</a></li><li class="page-item next"><a href="/sites/35597?c14s_page=2" data-turbo-action="advance" class="page-link"  rel="next" aria-label="next">Next&nbsp;&rsaquo;</a></li></ul></nav>
+      </turbo-frame>
+    </section>
+
+    <section id="site-typos" class="my-5">
+      <div id="sites-typos-toolbar" class="d-flex">
+        <h2>
+          <img style="width: auto; height: 2rem" alt="typological date" width="72" height="72" src="/assets/icons/typo-f5c59aa3.svg" />
+          Typological dates
+          <small class="text-muted">(21)</small>
+        </h2>
+        <div class="ms-auto">
+          <a class="btn btn-sm btn-outline-primary" title="Download CSV" href="/typos.csv?typo%5Bsample%5D%5Bcontexts%5D%5Bsite_id%5D=35597"><i class="bi-download"></i></a>
+        </div>
+      </div>
+
+      <turbo-frame id="site-typos-table">
+        <table class="table table-hover">
+  <thead>
+    <tr>
+      <th scope="col">
+        <a data-turbo-action="advance" href="/sites/35597?typos_order=asc&amp;typos_order_by=name">Classification</a>
+      </th>
+      <th scope="col">
+        <a data-turbo-action="advance" href="/sites/35597?typos_order=asc&amp;typos_order_by=approx_start_time">Estimated age</a>
+      </th>
+      <th scope="col" class="text-end">References</th>
+    </tr>
+  </thead>
+
+  <tbody>
+      <tr>
+        <td><a target="_top" href="/typos/138057">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138069">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Cruells+2008">Cruells 2008</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138070">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Cruells+2008">Cruells 2008</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138073">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138074">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138075">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138076">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138077">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138078">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138079">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138080">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-PPND+Moliste+2013">PPND Moliste 2013</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138149">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138150">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138156">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138157">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138158">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138159">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138160">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138161">ACN</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+      <tr>
+        <td><a target="_top" href="/typos/138174">Neolithic</a></td>
+        <td class="font-monospace"><abbr title="Unknown or missing value" class="initialism text-muted">NA</abbr></td>
+        <td class="small text-end">      <a href="#ref-Molist+%28ed.%29+1996">Molist (ed.) 1996</a>
+</td>
+      </tr>
+  </tbody>
+</table>
+
+          <nav class="pagy-bootstrap-nav"><ul class="pagination"><li class="page-item prev disabled"><a href="#" class="page-link">&lsaquo;&nbsp;Prev</a></li><li class="page-item active"><a href="/sites/35597?typos_page=1" data-turbo-action="advance" class="page-link"  >1</a></li><li class="page-item"><a href="/sites/35597?typos_page=2" data-turbo-action="advance" class="page-link"  rel="next" >2</a></li><li class="page-item next"><a href="/sites/35597?typos_page=2" data-turbo-action="advance" class="page-link"  rel="next" aria-label="next">Next&nbsp;&rsaquo;</a></li></ul></nav>
+      </turbo-frame>
+    </section>
+
+  <section id="site-references" class="my-5">
+    <h2>
+      <img style="width: auto; height: 2rem" alt="Bibliographic reference" width="72" height="72" src="/assets/icons/reference-42c0d378.svg" />
+      Bibliographic references
+    </h2>
+    
+  <ul class="nav nav-tabs justify-content-end" id="bibliographyTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="biblio-text-tab" data-bs-toggle="tab" data-bs-target="#biblio-text" type="button" role="tab" aria-controls="biblio-text" aria-selected="true">Text</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="biblio-bibtex-tab" data-bs-toggle="tab" data-bs-target="#biblio-bibtex" type="button" role="tab" aria-controls="biblio-bibtex" aria-selected="false">BibTeX</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="biblio-json-tab" data-bs-toggle="tab" data-bs-target="#biblio-json" type="button" role="tab" aria-controls="biblio-json" aria-selected="false">JSON</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="biblio-yaml-tab" data-bs-toggle="tab" data-bs-target="#biblio-yaml" type="button" role="tab" aria-controls="biblio-yaml" aria-selected="false">YAML</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="bibliographyTabsContent">
+
+    <div class="tab-pane fade show active p-3 border border-top-0" id="biblio-text" role="tabpanel" aria-labelledby="biblio-text-tab" tabindex="-1">
+      <ul class="list-unstyled mb-0">
+          <li id="ref-Molist+et+al.+2013%3B+Benz+2014">
+            No bibliographic information available.
+            <small><a href="/references/17770">[Molist et al. 2013; Benz 2014]</a></small>
+          </li>
+          <li id="ref-Cruells+2008%3B+CalPal%3B+Flohr+et+al.+2016">
+            No bibliographic information available.
+            <small><a href="/references/17810">[Cruells 2008; CalPal; Flohr et al. 2016]</a></small>
+          </li>
+          <li id="ref-Molist+1996%3B+Benz+2014%3B+CalPal%3B+Flohr+et+al.+2016">
+            No bibliographic information available.
+            <small><a href="/references/17869">[Molist 1996; Benz 2014; CalPal; Flohr et al. 2016]</a></small>
+          </li>
+          <li id="ref-Benz+et+al.+2014%3B+CalPal%3B+Flohr+et+al.+2016">
+            No bibliographic information available.
+            <small><a href="/references/17873">[Benz et al. 2014; CalPal; Flohr et al. 2016]</a></small>
+          </li>
+          <li id="ref-Pinhasi+et+al.+2005%3B+CalPal%3B+Flohr+et+al.+2016">
+            No bibliographic information available.
+            <small><a href="/references/17874">[Pinhasi et al. 2005; CalPal; Flohr et al. 2016]</a></small>
+          </li>
+          <li id="ref-CalPal%3B+Flohr+et+al.+2016">
+            No bibliographic information available.
+            <small><a href="/references/17881">[CalPal; Flohr et al. 2016]</a></small>
+          </li>
+          <li id="ref-Molist+et+al.+2013">
+            No bibliographic information available.
+            <small><a href="/references/18534">[Molist et al. 2013]</a></small>
+          </li>
+          <li id="ref-PPND+Moliste+2013">
+            No bibliographic information available.
+            <small><a href="/references/23383">[PPND Moliste 2013]</a></small>
+          </li>
+          <li id="ref-Cruells+2008">
+            No bibliographic information available.
+            <small><a href="/references/6315">[Cruells 2008]</a></small>
+          </li>
+          <li id="ref-Molist+%28ed.%29+1996">
+            No bibliographic information available.
+            <small><a href="/references/6326">[Molist (ed.) 1996]</a></small>
+          </li>
+          <li id="ref-Oregon+database">
+            No bibliographic information available.
+            <small><a href="/references/20963">[Oregon database]</a></small>
+          </li>
+          <li id="ref-Kiel+DB+4144">
+            No bibliographic information available.
+            <small><a href="/references/29982">[Kiel DB 4144]</a></small>
+          </li>
+          <li id="ref-NERD">
+            Palmisano, A., Bevan, A., Lawrence, D., &amp; Shennan, S. (2022). <i>The NERD Dataset: Near East Radiocarbon Dates between 15,000 and 1,500 Cal. Yr. BP</i>. <i>10</i>(0), 2. https://doi.org/10.5334/joad.90
+            <small><a href="/references/42128">[NERD]</a></small>
+          </li>
+          <li id="ref-p3k14c">
+            Bird, D., Miranda, L., Vander Linden, M., Robinson, E., Bocinsky, R. K., Nicholson, C., Capriles, J. M., Finley, J. B., Gayo, E. M., Gil, A., d’Alpoim Guedes, J., Hoggarth, J. A., Kay, A., Loftus, E., Lombardo, U., Mackie, M., Palmisano, A., Solheim, S., Kelly, R. L., &amp; Freeman, J. (2022). P3k14c, a Synthetic Global Database of Archaeological Radiocarbon Dates. <i>Scientific Data</i>, <i>9</i>(1), 27. https://doi.org/10.1038/s41597-022-01118-7
+            <small><a href="/references/42125">[p3k14c]</a></small>
+          </li>
+      </ul>
     </div>
-    <ul id="allSites" style="margin-top:1em;"></ul>
+
+    <div class="tab-pane fade p-3 border border-top-0" id="biblio-bibtex" role="tabpanel" aria-labelledby="biblio-bibtex-tab" tabindex="0">
+      <pre class="mb-0"><code class="p-0">@misc{Molist et al. 2013; Benz 2014,
+  
+}
+@misc{Cruells 2008; CalPal; Flohr et al. 2016,
+  
+}
+@misc{Molist 1996; Benz 2014; CalPal; Flohr et al. 2016,
+  
+}
+@misc{Benz et al. 2014; CalPal; Flohr et al. 2016,
+  
+}
+@misc{Pinhasi et al. 2005; CalPal; Flohr et al. 2016,
+  
+}
+@misc{CalPal; Flohr et al. 2016,
+  
+}
+@misc{Molist et al. 2013,
+  
+}
+@misc{PPND Moliste 2013,
+  
+}
+@misc{Cruells 2008,
+  
+}
+@misc{Molist (ed.) 1996,
+  
+}
+@misc{Oregon database,
+  
+}
+@misc{Kiel DB 4144,
+  
+}
+@article{NERD,
+  title = {The NERD Dataset: Near East Radiocarbon Dates between 15,000 and 1,500 Cal. Yr. BP},
+  shorttitle = {The NERD Dataset},
+  author = {Palmisano, Alessio and Bevan, Andrew and Lawrence, Dan and Shennan, Stephen},
+  date = {2022-02-22},
+  volume = {10},
+  number = {0},
+  pages = {2},
+  publisher = {Ubiquity Press},
+  issn = {2049-1565},
+  doi = {10.5334/joad.90},
+  url = {https://openarchaeologydata.metajnl.com/articles/10.5334/joad.90},
+  urldate = {2023-09-07},
+  abstract = {To our knowledge, the dataset described in this paper represents the largest existing repository of uncalibrated radiocarbon dates for the whole Near East from the Late Pleistocene to the Late Holocene (15,000 – 1,500 cal. yr. BP). It is composed of 11,027 radiocarbon dates from 1,023 sites that have been collected comprehensively by cross-checking multiple sources (extant digital archives and databases, edited volumes, monographs, journals papers, archaeological excavation reports, etc.) under the umbrella of the Leverhulme Trust funded project “Changing the Face of the Mediterranean” and of the ERC project “CLASS – Climate, Landscape, Settlement and Society: Exploring Human-Environment Interaction in the Ancient Near East”. This is an ongoing dataset that will be updated step by step with newly published radiocarbon dates.},
+  issue = {0},
+  langid = {american},
+  file = {/home/joeroe/g/work/library/2022/Palmisano_et_al_2022.pdf}
+}
+@article{p3k14c,
+  title = {P3k14c, a Synthetic Global Database of Archaeological Radiocarbon Dates},
+  author = {Bird, Darcy and Miranda, Lux and Vander Linden, Marc and Robinson, Erick and Bocinsky, R. Kyle and Nicholson, Chris and Capriles, José M. and Finley, Judson Byrd and Gayo, Eugenia M. and Gil, Adolfo and d’Alpoim Guedes, Jade and Hoggarth, Julie A. and Kay, Andrea and Loftus, Emma and Lombardo, Umberto and Mackie, Madeline and Palmisano, Alessio and Solheim, Steinar and Kelly, Robert L. and Freeman, Jacob},
+  year = {2022},
+  month = {jan},
+  journal = {Scientific Data},
+  volume = {9},
+  number = {1},
+  pages = {27},
+  publisher = {Nature Publishing Group},
+  issn = {2052-4463},
+  doi = {10.1038/s41597-022-01118-7},
+  abstract = {Archaeologists increasingly use large radiocarbon databases to model prehistoric human demography (also termed paleo-demography). Numerous independent projects, funded over the past decade, have assembled such databases from multiple regions of the world. These data provide unprecedented potential for comparative research on human population ecology and the evolution of social-ecological systems across the Earth. However, these databases have been developed using different sample selection criteria, which has resulted in interoperability issues for global-scale, comparative paleo-demographic research and integration with paleoclimate and paleoenvironmental data. We present a synthetic, global-scale archaeological radiocarbon database composed of 180,070 radiocarbon dates that have been cleaned according to a standardized sample selection criteria. This database increases the reusability of archaeological radiocarbon data and streamlines quality control assessments for various types of paleo-demographic research. As part of an assessment of data quality, we conduct two analyses of sampling bias in the global database at multiple scales. This database is ideal for paleo-demographic research focused on dates-as-data, bayesian modeling, or summed probability distribution methodologies.},
+  copyright = {2022 The Author(s)},
+  langid = {english},
+  keywords = {Archaeology,Chemistry},
+  month_numeric = {1}
+}
+</code></pre>
+    </div>
+
+    <div class="tab-pane fade p-3 border border-top-0" id="biblio-json" role="tabpanel" aria-labelledby="biblio-json-tab" tabindex="0">
+      <pre class="mb-0"><code class="p-0">{&quot;bibtex_key&quot;:&quot;Molist et al. 2013; Benz 2014&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Cruells 2008; CalPal; Flohr et al. 2016&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Molist 1996; Benz 2014; CalPal; Flohr et al. 2016&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Benz et al. 2014; CalPal; Flohr et al. 2016&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Pinhasi et al. 2005; CalPal; Flohr et al. 2016&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;CalPal; Flohr et al. 2016&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Molist et al. 2013&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;PPND Moliste 2013&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Cruells 2008&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Molist (ed.) 1996&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Oregon database&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}{&quot;bibtex_key&quot;:&quot;Kiel DB 4144&quot;,&quot;bibtex_type&quot;:&quot;misc&quot;}[{&quot;bibtex_key&quot;:&quot;NERD&quot;,&quot;bibtex_type&quot;:&quot;article&quot;,&quot;title&quot;:&quot;{The NERD Dataset: Near East Radiocarbon Dates between 15,000 and 1,500 Cal. Yr. BP}&quot;,&quot;shorttitle&quot;:&quot;{The NERD Dataset}&quot;,&quot;author&quot;:&quot;{Palmisano, Alessio and Bevan, Andrew and Lawrence, Dan and Shennan, Stephen}&quot;,&quot;date&quot;:&quot;{2022-02-22}&quot;,&quot;volume&quot;:&quot;{10}&quot;,&quot;number&quot;:&quot;{0}&quot;,&quot;pages&quot;:&quot;{2}&quot;,&quot;publisher&quot;:&quot;{Ubiquity Press}&quot;,&quot;issn&quot;:&quot;{2049-1565}&quot;,&quot;doi&quot;:&quot;{10.5334/joad.90}&quot;,&quot;url&quot;:&quot;{https://openarchaeologydata.metajnl.com/articles/10.5334/joad.90}&quot;,&quot;urldate&quot;:&quot;{2023-09-07}&quot;,&quot;abstract&quot;:&quot;{To our knowledge, the dataset described in this paper represents the largest existing repository of uncalibrated radiocarbon dates for the whole Near East from the Late Pleistocene to the Late Holocene (15,000 – 1,500 cal. yr. BP). It is composed of 11,027 radiocarbon dates from 1,023 sites that have been collected comprehensively by cross-checking multiple sources (extant digital archives and databases, edited volumes, monographs, journals papers, archaeological excavation reports, etc.) under the umbrella of the Leverhulme Trust funded project “Changing the Face of the Mediterranean” and of the ERC project “CLASS – Climate, Landscape, Settlement and Society: Exploring Human-Environment Interaction in the Ancient Near East”. This is an ongoing dataset that will be updated step by step with newly published radiocarbon dates.}&quot;,&quot;issue&quot;:&quot;{0}&quot;,&quot;langid&quot;:&quot;{american}&quot;,&quot;file&quot;:&quot;{/home/joeroe/g/work/library/2022/Palmisano_et_al_2022.pdf}&quot;}][{&quot;bibtex_key&quot;:&quot;p3k14c&quot;,&quot;bibtex_type&quot;:&quot;article&quot;,&quot;title&quot;:&quot;{P3k14c, a Synthetic Global Database of Archaeological Radiocarbon Dates}&quot;,&quot;author&quot;:&quot;{Bird, Darcy and Miranda, Lux and Vander Linden, Marc and Robinson, Erick and Bocinsky, R. Kyle and Nicholson, Chris and Capriles, José M. and Finley, Judson Byrd and Gayo, Eugenia M. and Gil, Adolfo and d’Alpoim Guedes, Jade and Hoggarth, Julie A. and Kay, Andrea and Loftus, Emma and Lombardo, Umberto and Mackie, Madeline and Palmisano, Alessio and Solheim, Steinar and Kelly, Robert L. and Freeman, Jacob}&quot;,&quot;year&quot;:&quot;{2022}&quot;,&quot;month&quot;:&quot;{jan}&quot;,&quot;journal&quot;:&quot;{Scientific Data}&quot;,&quot;volume&quot;:&quot;{9}&quot;,&quot;number&quot;:&quot;{1}&quot;,&quot;pages&quot;:&quot;{27}&quot;,&quot;publisher&quot;:&quot;{Nature Publishing Group}&quot;,&quot;issn&quot;:&quot;{2052-4463}&quot;,&quot;doi&quot;:&quot;{10.1038/s41597-022-01118-7}&quot;,&quot;abstract&quot;:&quot;{Archaeologists increasingly use large radiocarbon databases to model prehistoric human demography (also termed paleo-demography). Numerous independent projects, funded over the past decade, have assembled such databases from multiple regions of the world. These data provide unprecedented potential for comparative research on human population ecology and the evolution of social-ecological systems across the Earth. However, these databases have been developed using different sample selection criteria, which has resulted in interoperability issues for global-scale, comparative paleo-demographic research and integration with paleoclimate and paleoenvironmental data. We present a synthetic, global-scale archaeological radiocarbon database composed of 180,070 radiocarbon dates that have been cleaned according to a standardized sample selection criteria. This database increases the reusability of archaeological radiocarbon data and streamlines quality control assessments for various types of paleo-demographic research. As part of an assessment of data quality, we conduct two analyses of sampling bias in the global database at multiple scales. This database is ideal for paleo-demographic research focused on dates-as-data, bayesian modeling, or summed probability distribution methodologies.}&quot;,&quot;copyright&quot;:&quot;{2022 The Author(s)}&quot;,&quot;langid&quot;:&quot;{english}&quot;,&quot;keywords&quot;:&quot;{Archaeology,Chemistry}&quot;,&quot;month_numeric&quot;:&quot;{1}&quot;}]</code></pre>
+    </div>
+
+    <div class="tab-pane fade p-3 border border-top-0" id="biblio-yaml" role="tabpanel" aria-labelledby="biblio-yaml-tab" tabindex="0">
+      <pre class="mb-0"><code class="p-0">---
+:bibtex_key: Molist et al. 2013; Benz 2014
+:bibtex_type: :misc
+---
+:bibtex_key: Cruells 2008; CalPal; Flohr et al. 2016
+:bibtex_type: :misc
+---
+:bibtex_key: Molist 1996; Benz 2014; CalPal; Flohr et al. 2016
+:bibtex_type: :misc
+---
+:bibtex_key: Benz et al. 2014; CalPal; Flohr et al. 2016
+:bibtex_type: :misc
+---
+:bibtex_key: Pinhasi et al. 2005; CalPal; Flohr et al. 2016
+:bibtex_type: :misc
+---
+:bibtex_key: CalPal; Flohr et al. 2016
+:bibtex_type: :misc
+---
+:bibtex_key: Molist et al. 2013
+:bibtex_type: :misc
+---
+:bibtex_key: PPND Moliste 2013
+:bibtex_type: :misc
+---
+:bibtex_key: Cruells 2008
+:bibtex_type: :misc
+---
+:bibtex_key: Molist (ed.) 1996
+:bibtex_type: :misc
+---
+:bibtex_key: Oregon database
+:bibtex_type: :misc
+---
+:bibtex_key: Kiel DB 4144
+:bibtex_type: :misc
+---
+- :bibtex_key: NERD
+  :bibtex_type: :article
+  :title: &quot;{The NERD Dataset: Near East Radiocarbon Dates between 15,000 and 1,500
+    Cal. Yr. BP}&quot;
+  :shorttitle: &quot;{The NERD Dataset}&quot;
+  :author: &quot;{Palmisano, Alessio and Bevan, Andrew and Lawrence, Dan and Shennan, Stephen}&quot;
+  :date: &quot;{2022-02-22}&quot;
+  :volume: &quot;{10}&quot;
+  :number: &quot;{0}&quot;
+  :pages: &quot;{2}&quot;
+  :publisher: &quot;{Ubiquity Press}&quot;
+  :issn: &quot;{2049-1565}&quot;
+  :doi: &quot;{10.5334/joad.90}&quot;
+  :url: &quot;{https://openarchaeologydata.metajnl.com/articles/10.5334/joad.90}&quot;
+  :urldate: &quot;{2023-09-07}&quot;
+  :abstract: &quot;{To our knowledge, the dataset described in this paper represents the
+    largest existing repository of uncalibrated radiocarbon dates for the whole Near
+    East from the Late Pleistocene to the Late Holocene (15,000 – 1,500 cal. yr. BP).
+    It is composed of 11,027 radiocarbon dates from 1,023 sites that have been collected
+    comprehensively by cross-checking multiple sources (extant digital archives and
+    databases, edited volumes, monographs, journals papers, archaeological excavation
+    reports, etc.) under the umbrella of the Leverhulme Trust funded project “Changing
+    the Face of the Mediterranean” and of the ERC project “CLASS – Climate, Landscape,
+    Settlement and Society: Exploring Human-Environment Interaction in the Ancient
+    Near East”. This is an ongoing dataset that will be updated step by step with
+    newly published radiocarbon dates.}&quot;
+  :issue: &quot;{0}&quot;
+  :langid: &quot;{american}&quot;
+  :file: &quot;{/home/joeroe/g/work/library/2022/Palmisano_et_al_2022.pdf}&quot;
+---
+- :bibtex_key: p3k14c
+  :bibtex_type: :article
+  :title: &quot;{P3k14c, a Synthetic Global Database of Archaeological Radiocarbon Dates}&quot;
+  :author: &quot;{Bird, Darcy and Miranda, Lux and Vander Linden, Marc and Robinson, Erick
+    and Bocinsky, R. Kyle and Nicholson, Chris and Capriles, José M. and Finley, Judson
+    Byrd and Gayo, Eugenia M. and Gil, Adolfo and d’Alpoim Guedes, Jade and Hoggarth,
+    Julie A. and Kay, Andrea and Loftus, Emma and Lombardo, Umberto and Mackie, Madeline
+    and Palmisano, Alessio and Solheim, Steinar and Kelly, Robert L. and Freeman,
+    Jacob}&quot;
+  :year: &quot;{2022}&quot;
+  :month: &quot;{jan}&quot;
+  :journal: &quot;{Scientific Data}&quot;
+  :volume: &quot;{9}&quot;
+  :number: &quot;{1}&quot;
+  :pages: &quot;{27}&quot;
+  :publisher: &quot;{Nature Publishing Group}&quot;
+  :issn: &quot;{2052-4463}&quot;
+  :doi: &quot;{10.1038/s41597-022-01118-7}&quot;
+  :abstract: &quot;{Archaeologists increasingly use large radiocarbon databases to model
+    prehistoric human demography (also termed paleo-demography). Numerous independent
+    projects, funded over the past decade, have assembled such databases from multiple
+    regions of the world. These data provide unprecedented potential for comparative
+    research on human population ecology and the evolution of social-ecological systems
+    across the Earth. However, these databases have been developed using different
+    sample selection criteria, which has resulted in interoperability issues for global-scale,
+    comparative paleo-demographic research and integration with paleoclimate and paleoenvironmental
+    data. We present a synthetic, global-scale archaeological radiocarbon database
+    composed of 180,070 radiocarbon dates that have been cleaned according to a standardized
+    sample selection criteria. This database increases the reusability of archaeological
+    radiocarbon data and streamlines quality control assessments for various types
+    of paleo-demographic research. As part of an assessment of data quality, we conduct
+    two analyses of sampling bias in the global database at multiple scales. This
+    database is ideal for paleo-demographic research focused on dates-as-data, bayesian
+    modeling, or summed probability distribution methodologies.}&quot;
+  :copyright: &quot;{2022 The Author(s)}&quot;
+  :langid: &quot;{english}&quot;
+  :keywords: &quot;{Archaeology,Chemistry}&quot;
+  :month_numeric: &quot;{1}&quot;
+</code></pre>
+    </div>
+
   </div>
 
-  <div id="detailView" class="detail-page" style="display:none;">
-    <h2 id="siteName"></h2>
-    <div id="detailMap" class="detail-map"></div>
-    <table id="siteTable"></table>
-  </div>
 
-  <footer>
-    <p>📍 Archeopedia &copy; 2025 — Data from <a href="https://xronos.ch/" target="_blank">Xronos</a> | Maps &copy; Esri Imagery</p>
-  </footer>
+  </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map', { center: [31.5, -7], zoom: 6 });
-    const imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' }).addTo(map);
-    const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
-    const baseLayers = { "🌍 Satellite": imagery, "🗺️ Topographic": topo };
-    L.control.layers(baseLayers).addTo(map);
-    L.control.scale().addTo(map);
+  <section id="changelog" class="my-5">
+    <h2>Changelog</h2>
+    <div class="accordion" id="versionHistory">
 
-    let rawData = [], markers = [], suggestions = [];
+    <div class="accordion-item">
+      <div id="version1727970" class="accordion-header">
+        <button class="accordion-button collapsed" 
+                type="button" 
+                  disabled
+                data-bs-toggle="collapse" 
+                data-bs-target="#changeset1727970" 
+                aria-expanded="true" 
+                aria-controls="changeset1727970">
+                <div>
+                  <h3 class="h6">
+                    <span class="text-muted">
+    <i title="Create" class="bi-plus"></i>
+</span>
 
-    async function fetchData() {
-      const res = await fetch('data/output.json');
-      rawData = await res.json();
-      suggestions = rawData.map(s => s.site.toLowerCase());
-      populateSites(rawData);
-      fillListView(rawData);
-    }
+                    Imported from source database via <a href="https://github.com/xronos-ch/xronos-import/blob/eba0da90659b60fdcd698adc3e40e904e03e5a29/scripts/xronos_import_20220202.R">c14bazAAR</a>
 
-    function populateSites(data) {
-      const list = document.getElementById('siteList');
-      list.innerHTML = '';
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-      data.forEach(site => {
-        if (!site.lat || !site.lng) return;
-        const marker = L.marker([+site.lat, +site.lng]).addTo(map)
-          .bindPopup(`<strong>${site.site}</strong><br>${site.periods}`);
-        markers.push(marker);
-        const div = document.createElement('div');
-        div.className = 'site-card';
-        div.innerHTML = `<strong>${site.site}</strong><br><small>${site.labnr || ''}</small><br><small>${site.periods || ''}</small>`;
-        div.onclick = () => showDetail(site);
-        list.appendChild(div);
-      });
-    }
+                  </h3>
+                  <p class="small text-muted">
+                      <a href="/contributors/2">XRONOS development team</a>
 
-    function fillListView(data) {
-      const list = document.getElementById('allSites');
-      list.innerHTML = '';
-      data.forEach(site => {
-        const li = document.createElement('li');
-        li.textContent = site.site;
-        li.style.cursor = 'pointer';
-        li.onclick = () => showDetail(site);
-        list.appendChild(li);
-      });
-    }
+                  2022-12-02 00:50:45 UTC
+                  </p>
+                </div>
+        </button>
+      </div>
+      <div id="changeset1727970" class="accordion-collapse collapse" aria-labelledby="version1727970" data-bs-parent="#versionHistory">
+        <div class="accordion-body">
+          
+        </div>
+      </div>
+    </div>
 
-    function setupAutocomplete(inputId, boxId, callback) {
-      const input = document.getElementById(inputId);
-      const box = document.getElementById(boxId);
-      input.addEventListener('input', () => {
-        const value = input.value.toLowerCase();
-        box.innerHTML = '';
-        if (value.length < 2) return;
-        suggestions.filter(s => s.includes(value)).slice(0, 10).forEach(s => {
-          const div = document.createElement('div');
-          div.textContent = s;
-          div.onclick = () => {
-            input.value = s;
-            box.innerHTML = '';
-            callback(s);
-          };
-          box.appendChild(div);
-        });
-      });
-    }
+</div>
 
-    function searchAndFilter(term) {
-      const filtered = rawData.filter(s => s.site.toLowerCase().includes(term));
-      populateSites(filtered);
-      fillListView(filtered);
-    }
+  </section>
 
-    function showDetail(site) {
-      document.getElementById('home').style.display = 'none';
-      document.getElementById('listView').style.display = 'none';
-      document.getElementById('detailView').style.display = 'block';
-      document.getElementById('siteName').textContent = site.site;
-      const table = document.getElementById('siteTable');
-      table.innerHTML = '';
-      for (const key in site) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<th>${key}</th><td>${site[key]}</td>`;
-        table.appendChild(row);
-      }
-      setTimeout(() => {
-        const mapDiv = document.getElementById('detailMap');
-        mapDiv.innerHTML = '';
-        const detailMap = L.map(mapDiv).setView([+site.lat, +site.lng], 10);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri'
-        }).addTo(detailMap);
-        L.marker([+site.lat, +site.lng]).addTo(detailMap);
-        detailMap.invalidateSize();
-      }, 100);
-    }
+</main>
 
-    function showHome() {
-      document.getElementById('home').style.display = 'flex';
-      document.getElementById('listView').style.display = 'none';
-      document.getElementById('detailView').style.display = 'none';
-    }
+    
 
-    function showList() {
-      document.getElementById('home').style.display = 'none';
-      document.getElementById('listView').style.display = 'block';
-      document.getElementById('detailView').style.display = 'none';
-    }
+    <footer class="mt-auto pb-3 text-bg-dark">
+      <div class="container">
+        <div class="row">
 
-    function resetMap() {
-      map.setView([31.5, -7], 6);
-    }
+          <div class="col-md-6 mt-5 mb-5">
+            <img alt="XRONOS" class="mt-3 mb-3" style="max-height: 3rem;" src="/assets/xronos_logo_light-d276f1c7.svg" />
+            <p class="mt-0 mb-3">XRONOS is an open repository and curation platform for chronometric data from archaeological contexts worldwide.</p>
 
-    setupAutocomplete('searchBox', 'searchSuggestions', searchAndFilter);
-    setupAutocomplete('listSearch', 'listSuggestions', searchAndFilter);
-    fetchData();
-  </script>
-</body>
+            <div class="row mt-5">
+              <div class="col"><a href="https://www.snf.ch"><img alt="Swiss National Science Foundation (SNF)" style="max-height: 3rem;" src="/assets/sponsors/snf-afb0c4aa.webp" /></a></div>
+              <div class="col"><a href="https://www.unibe.ch"><img alt="University of Bern" style="max-height: 3rem;" src="/assets/sponsors/unibe-d38c4933.webp" /></a></div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3 mt-md-5 text-md-end">
+            <h1 class="h6 mt-3 fw-bold text-uppercase">Data</h6>
+            <ul class="nav flex-column mb-3">
+              <li class="nav-item"><a class="nav-link ps-0 pe-0 link-light" href="/data">Browser</a></li>
+              <li class="nav-item"><a class="nav-link ps-0 pe-0 link-light" href="/database">Schema</a></li>
+              <li class="nav-item"><a class="nav-link ps-0 pe-0 link-light" href="/api">API</a></li>
+            </ul>
+          </div>
+
+          <div class="col-6 col-md-3 mt-md-5 text-md-end">
+            <h1 class="h6 mt-3 fw-bold text-uppercase">About</h6>
+            <ul class="nav flex-column mb-3">
+                <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/contact">
+      Contact us
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/acknowledgements">
+      Acknowledgements
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/disclaimer">
+      Disclaimer
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/research">
+      Research
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/xronos">
+      What is XRONOS?
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link ps-0 pe-0 link-light" href="/about/contribute">
+      Contribute
+    </a>
+  </li>
+
+            </ul>
+          </div>
+
+        </div>
+
+        <hr>
+
+        <div class="row">
+
+          <div class="col-md-9">
+            <small class="rights">This work is licensed under a <a class="link-light" rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</small>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <small class="source-code">
+              <a class="link-light" href="https://github.com/xronos-ch/xronos.rails/"><span class="fa fa-github fa-lg me-1"></span>View source on GitHub</a>
+            </small>
+
+          </div>
+
+        </div>
+    </footer>
+
+    </div>
+  </body>
 </html>
+
