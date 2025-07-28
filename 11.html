@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Archeopedia - تجربة ثلاثية الأبعاد</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS للخريطة التقليدية -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body, html {height:100%;margin:0;font-family:'Tajawal',Arial,sans-serif;background:radial-gradient(ellipse at top,#6a9fcf 0%,#181c24 100%);}
+    #map {width:100vw;height:100vh;z-index:2;}
+    #three3d {width:100vw;height:100vh;position:absolute;top:0;left:0;z-index:3;display:none;}
+    #controlBar {position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,34,44,0.80);border-radius:18px;padding:8px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.22);display:flex;gap:24px;z-index:99999;}
+    #controlBar button {background:none;border:none;color:#fff;font-size:1.18em;cursor:pointer;transition:color 0.2s;padding:5px 12px;}
+    #controlBar button:hover {color:#4ad1ff;}
+  </style>
+</head>
+<body dir="rtl">
+  <div id="map"></div>
+  <div id="three3d"></div>
+
+  <div id="controlBar">
+    <button id="homeBtn">🏠 الرئيسية</button>
+    <button id="threeBtn">🗻 ثلاثي الأبعاد (Three.js)</button>
+  </div>
+
+  <!-- Leaflet JS للخريطة -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+  <!-- FontLoader من أمثلة Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/FontLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/geometries/TextGeometry.js"></script>
+  <script>
+    // إعداد خريطة Leaflet
+    const map = L.map('map', {zoomControl:false,minZoom:2,maxZoom:15,attributionControl:false})
+      .setView([30.7, 34.8], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {detectRetina:true,maxZoom:18}).addTo(map);
+
+    // زر الرئيسية: عرض الخريطة وإخفاء 3D
+    document.getElementById('homeBtn').onclick = function(){
+      document.getElementById('three3d').style.display = 'none';
+      document.getElementById('map').style.display = 'block';
+    };
+
+    // زر ثلاثي الأبعاد: عرض Three.js وإخفاء الخريطة
+    document.getElementById('threeBtn').onclick = function() {
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('three3d').style.display = 'block';
+      startThreeJS();
+    };
+
+    // دالة عرض نموذج ثلاثي الأبعاد
+    function startThreeJS() {
+      // تنظيف العنصر أولًا
+      document.getElementById('three3d').innerHTML = '';
+
+      // إعداد المشهد والكاميرا والمجسم
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x181c24);
+
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      camera.position.z = 4;
+
+      const renderer = new THREE.WebGLRenderer({antialias:true});
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.getElementById('three3d').appendChild(renderer.domElement);
+
+      // إضاءة
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(5,5,5).normalize();
+      scene.add(light);
+
+      // مجسم ثلاثي الأبعاد (مكعب)
+      const geometry = new THREE.BoxGeometry();
+      const material = new THREE.MeshStandardMaterial({ color: 0x307fff });
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+
+      // نص توضيحي ثلاثي الأبعاد
+      const fontLoader = new THREE.FontLoader();
+      fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+        const textGeo = new THREE.TextGeometry('Archeopedia 3D', {
+            font: font,
+            size: 0.4,
+            height: 0.05
+        });
+        const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const textMesh = new THREE.Mesh(textGeo, textMaterial);
+        textMesh.position.set(-1.4, -1.5, 0);
+        scene.add(textMesh);
+      });
+
+      // استجابة لتغيير حجم الشاشة
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // حركة المكعب
+      function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+  </script>
+</body>
+</html>
