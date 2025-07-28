@@ -46,10 +46,10 @@
     // إنشاء الخريطة
     var map = L.map('map').setView([31.7917, -7.0926], 5);
 
-    // طبقة ويكيميديا
-    L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+    // طبقة OpenStreetMap بدلاً من Wikimedia
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; Wikimedia Maps'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     // استعلام SPARQL من Wikidata (مواقع أثرية في المغرب كمثال)
