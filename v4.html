@@ -1,125 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Prehistory Timeline - Heritage</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archeopedia - Moroccan Archaeological Sites</title>
+  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Georgia, serif;
+      font-family: 'Roboto', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f7f7f7;
-      color: #333;
+      background: #eaeaea;
     }
-    header {
-      background-color: #2f4f4f;
-      color: white;
-      padding: 20px;
+    header, footer {
+      background: #fff;
+      padding: 1em;
       text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    section {
+    nav {
+      display: flex;
+      justify-content: center;
+      background: #333;
+      color: #fff;
+      padding: 0.5em;
+    }
+    nav a {
+      margin: 0 1em;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .container {
+      display: flex;
+      height: calc(100vh - 160px);
+    }
+    #map {
+      width: 70%;
+      height: 100%;
+    }
+    #sidebar {
+      width: 30%;
+      height: 100%;
+      overflow-y: auto;
+      padding: 1em;
+      background: #fefefe;
+      border-left: 1px solid #ccc;
+    }
+    .site-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .site-card:hover {
+      transform: scale(1.02);
+    }
+    .search input {
+      width: 100%;
+      padding: 0.75em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    .autocomplete-suggestions {
+      background: #fff;
+      border: 1px solid #ccc;
+      position: absolute;
+      z-index: 1000;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 0 0 8px 8px;
+    }
+    .autocomplete-suggestions div {
+      padding: 0.5em;
+      cursor: pointer;
+    }
+    .autocomplete-suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+    .detail-page {
+      padding: 2em;
       max-width: 900px;
       margin: auto;
-      padding: 20px;
-      background: white;
-      margin-bottom: 20px;
-      border-left: 5px solid #2f4f4f;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    h2 {
-      color: #2f4f4f;
+    .detail-map {
+      height: 350px;
+      margin: 1em 0;
     }
-    img {
-      max-width: 100%;
-      border-radius: 6px;
-      margin-top: 10px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .location {
-      margin: 10px 0;
-      cursor: pointer;
-      background: #eee;
-      padding: 10px;
-      border-radius: 5px;
+    th, td {
+      padding: 0.75em;
+      border: 1px solid #ddd;
     }
-    .location:hover {
-      background: #ddd;
-    }
-    .details {
-      display: none;
-      margin-top: 5px;
-      padding-left: 10px;
-      border-left: 2px solid #aaa;
+    th {
+      background: #f4f4f4;
+      text-align: left;
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>🌍 Archeopedia: Moroccan Archaeological Atlas</h1>
+    <p>Powered by Xronos | Inspired by Google Earth Studio and Google Places</p>
+  </header>
+  <nav>
+    <a href="#" onclick="showHome()">🏠 Home Map</a>
+    <a href="#" onclick="showList()">📋 All Sites</a>
+  </nav>
 
-<header>
-  <h1>Prehistory in Britain</h1>
-  <p>Explore the Palaeolithic, Mesolithic and Neolithic periods</p>
-</header>
-
-<section>
-  <h2>Palaeolithic Period</h2>
-  <p>The earliest humans arrived in Britain over 800,000 years ago.</p>
-
-  <div class="location" onclick="toggleDetails(this)">
-    🪨 Happisburgh (Norfolk)
-    <div class="details">
-      <p>Earliest evidence of humans in Britain. Stone tools found along ancient estuary.</p>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Happisburgh_-_geograph.org.uk_-_1009586.jpg/640px-Happisburgh_-_geograph.org.uk_-_1009586.jpg" alt="Happisburgh">
+  <div id="home" class="container">
+    <div id="map"></div>
+    <div id="sidebar">
+      <div class="search">
+        <input type="text" id="searchBox" placeholder="🔍 Search for a site...">
+        <div id="searchSuggestions" class="autocomplete-suggestions"></div>
+      </div>
+      <div id="siteList"></div>
+      <button onclick="resetMap()" style="margin-top: 1em;">🔄 Reset Map</button>
     </div>
   </div>
 
-  <div class="location" onclick="toggleDetails(this)">
-    🦴 Boxgrove (West Sussex)
-    <div class="details">
-      <p>500,000-year-old remains of early humans and tools near a chalk cliff.</p>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Boxgrove_quarry_west_sussex_uk.jpg/640px-Boxgrove_quarry_west_sussex_uk.jpg" alt="Boxgrove">
+  <div id="listView" style="display:none; padding:2em;">
+    <h2>🗂️ Complete Site List</h2>
+    <div class="search">
+      <input type="text" id="listSearch" placeholder="Search by name...">
+      <div id="listSuggestions" class="autocomplete-suggestions"></div>
     </div>
-  </div>
-</section>
-
-<section>
-  <h2>Mesolithic Period</h2>
-  <p>After the Ice Age, forests spread and people adapted to a changing climate.</p>
-
-  <div class="location" onclick="toggleDetails(this)">
-    🌲 Star Carr (North Yorkshire)
-    <div class="details">
-      <p>Site showing early dwellings and deer head-dresses used in rituals.</p>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Star_Carr_dig_site.jpg/640px-Star_Carr_dig_site.jpg" alt="Star Carr">
-    </div>
-  </div>
-</section>
-
-<section>
-  <h2>Neolithic Period</h2>
-  <p>The first farmers arrive and start building monumental structures.</p>
-
-  <div class="location" onclick="toggleDetails(this)">
-    ⛰️ Skara Brae (Orkney)
-    <div class="details">
-      <p>Well-preserved stone-built houses from around 3100 BC.</p>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Skara_Brae_view.jpg/640px-Skara_Brae_view.jpg" alt="Skara Brae">
-    </div>
+    <ul id="allSites" style="margin-top:1em;"></ul>
   </div>
 
-  <div class="location" onclick="toggleDetails(this)">
-    🔆 Stonehenge (Wiltshire)
-    <div class="details">
-      <p>Famous stone circle aligned with the solstice. Built in stages starting c. 3000 BC.</p>
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Stonehenge2007_07_30.jpg/640px-Stonehenge2007_07_30.jpg" alt="Stonehenge">
-    </div>
+  <div id="detailView" class="detail-page" style="display:none;">
+    <h2 id="siteName"></h2>
+    <div id="detailMap" class="detail-map"></div>
+    <table id="siteTable"></table>
   </div>
-</section>
 
-<script>
-  function toggleDetails(elem) {
-    const detail = elem.querySelector('.details');
-    detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
-  }
-</script>
+  <footer>
+    <p>📍 Archeopedia &copy; 2025 — Data from <a href="https://xronos.ch/" target="_blank">Xronos</a> | Maps &copy; Esri Imagery</p>
+  </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { center: [31.5, -7], zoom: 6 });
+    const imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' }).addTo(map);
+    const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
+    const baseLayers = { "🌍 Satellite": imagery, "🗺️ Topographic": topo };
+    L.control.layers(baseLayers).addTo(map);
+    L.control.scale().addTo(map);
+
+    let rawData = [], markers = [], suggestions = [];
+
+    async function fetchData() {
+      const res = await fetch('data/output.json');
+      rawData = await res.json();
+      suggestions = rawData.map(s => s.site.toLowerCase());
+      populateSites(rawData);
+      fillListView(rawData);
+    }
+
+    function populateSites(data) {
+      const list = document.getElementById('siteList');
+      list.innerHTML = '';
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      data.forEach(site => {
+        if (!site.lat || !site.lng) return;
+        const marker = L.marker([+site.lat, +site.lng]).addTo(map)
+          .bindPopup(`<strong>${site.site}</strong><br>${site.periods}`);
+        markers.push(marker);
+        const div = document.createElement('div');
+        div.className = 'site-card';
+        div.innerHTML = `<strong>${site.site}</strong><br><small>${site.labnr || ''}</small><br><small>${site.periods || ''}</small>`;
+        div.onclick = () => showDetail(site);
+        list.appendChild(div);
+      });
+    }
+
+    function fillListView(data) {
+      const list = document.getElementById('allSites');
+      list.innerHTML = '';
+      data.forEach(site => {
+        const li = document.createElement('li');
+        li.textContent = site.site;
+        li.style.cursor = 'pointer';
+        li.onclick = () => showDetail(site);
+        list.appendChild(li);
+      });
+    }
+
+    function setupAutocomplete(inputId, boxId, callback) {
+      const input = document.getElementById(inputId);
+      const box = document.getElementById(boxId);
+      input.addEventListener('input', () => {
+        const value = input.value.toLowerCase();
+        box.innerHTML = '';
+        if (value.length < 2) return;
+        suggestions.filter(s => s.includes(value)).slice(0, 10).forEach(s => {
+          const div = document.createElement('div');
+          div.textContent = s;
+          div.onclick = () => {
+            input.value = s;
+            box.innerHTML = '';
+            callback(s);
+          };
+          box.appendChild(div);
+        });
+      });
+    }
+
+    function searchAndFilter(term) {
+      const filtered = rawData.filter(s => s.site.toLowerCase().includes(term));
+      populateSites(filtered);
+      fillListView(filtered);
+    }
+
+    function showDetail(site) {
+      document.getElementById('home').style.display = 'none';
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+      document.getElementById('siteName').textContent = site.site;
+      const table = document.getElementById('siteTable');
+      table.innerHTML = '';
+      for (const key in site) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<th>${key}</th><td>${site[key]}</td>`;
+        table.appendChild(row);
+      }
+      setTimeout(() => {
+        const mapDiv = document.getElementById('detailMap');
+        mapDiv.innerHTML = '';
+        const detailMap = L.map(mapDiv).setView([+site.lat, +site.lng], 10);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri'
+        }).addTo(detailMap);
+        L.marker([+site.lat, +site.lng]).addTo(detailMap);
+        detailMap.invalidateSize();
+      }, 100);
+    }
+
+    function showHome() {
+      document.getElementById('home').style.display = 'flex';
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'none';
+    }
+
+    function showList() {
+      document.getElementById('home').style.display = 'none';
+      document.getElementById('listView').style.display = 'block';
+      document.getElementById('detailView').style.display = 'none';
+    }
+
+    function resetMap() {
+      map.setView([31.5, -7], 6);
+    }
+
+    setupAutocomplete('searchBox', 'searchSuggestions', searchAndFilter);
+    setupAutocomplete('listSearch', 'listSuggestions', searchAndFilter);
+    fetchData();
+  </script>
 </body>
 </html>
