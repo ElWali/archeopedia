@@ -17,16 +17,32 @@
       width: 100%;
       height: 100vh;
     }
+    #loading {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 9999;
+      font-size: 1.2em;
+      display: none;
+    }
   </style>
 </head>
 <body>
 
+  <div id="loading">جاري تحميل البيانات...</div>
   <div id="map"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
+    // إظهار رسالة التحميل
+    document.getElementById('loading').style.display = 'block';
+
     // إنشاء الخريطة
     var map = L.map('map').setView([31.7917, -7.0926], 5);
 
@@ -54,19 +70,29 @@
       .then(body => body.json())
       .then(json => {
         const results = json.results.bindings;
+        if (!results.length) {
+          alert('لم يتم العثور على مواقع أثرية!');
+        }
         results.forEach(item => {
-          const coord = item.coord.value.match(/Point\\(([-\\d\\.]+) ([-\\d\\.]+)\\)/);
-          const lon = parseFloat(coord[1]);
-          const lat = parseFloat(coord[2]);
+          if (!item.coord || !item.siteLabel || !item.site) return; // تحقق من البيانات
+          const match = item.coord.value.match(/Point\(([-\d\.]+) ([-\d\.]+)\)/);
+          if (!match) return; // تحقق من الإحداثيات
+          const lon = parseFloat(match[1]);
+          const lat = parseFloat(match[2]);
           const label = item.siteLabel.value;
           const url = item.site.value;
 
-          L.marker([lat, lon])
-            .addTo(map)
-            .bindPopup(`<strong>${label}</strong><br><a href="${url}" target="_blank">عرض في Wikidata</a>`);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            L.marker([lat, lon])
+              .addTo(map)
+              .bindPopup(`<strong>${label}</strong><br><a href="${url}" target="_blank">عرض في Wikidata</a>`);
+          }
         });
+        document.getElementById('loading').style.display = 'none';
       })
       .catch(err => {
+        document.getElementById('loading').style.display = 'none';
+        alert('فشل في جلب البيانات من ويكي بيانات');
         console.error('فشل في جلب البيانات من ويكي بيانات', err);
       });
   </script>
