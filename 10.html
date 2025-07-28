@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Archeopedia - تجربة Google Earth Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: 'Tajawal', Arial, sans-serif;
+      background: radial-gradient(ellipse at top, #6a9fcf 0%, #181c24 100%);
+      overflow: hidden;
+    }
+    #map {
+      width: 100vw;
+      height: 100vh;
+      filter: drop-shadow(0 8px 48px rgba(0,0,0,0.32));
+      z-index: 1;
+    }
+    #searchBar {
+      position: fixed;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      padding: 12px 24px;
+      border-radius: 22px;
+      backdrop-filter: blur(16px) saturate(160%);
+      background: rgba(255,255,255,0.28);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.23);
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      transition: all 0.4s cubic-bezier(.23,1,.32,1);
+    }
+    #searchInput {
+      flex: 1;
+      border: none;
+      border-radius: 12px;
+      padding: 8px;
+      outline: none;
+      font-size: 1em;
+      background: rgba(255,255,255,0.63);
+      transition: background 0.3s;
+    }
+    #searchInput:focus {
+      background: #fff;
+    }
+    #searchBtn {
+      background: #307fff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 1em;
+      box-shadow: 0 2px 8px rgba(0,123,255,0.12);
+      transition: background 0.2s;
+    }
+    #searchBtn:hover {
+      background: #0056b3;
+    }
+    #openListBtn {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      background: #307fff;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      font-size: 1.4em;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,123,255,0.12);
+      transition: background 0.2s;
+      z-index: 11;
+    }
+    #openListBtn:hover {
+      background: #0056b3;
+    }
+    #siteListModal {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 360px;
+      height: 100vh;
+      background: rgba(255,255,255,0.28);
+      backdrop-filter: blur(16px) saturate(160%);
+      border-left: 1px solid rgba(255,255,255,0.18);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.16);
+      z-index: 100;
+      transition: right 0.6s cubic-bezier(.23,1,.32,1);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 18px;
+    }
+    #siteListModal.show {
+      right: 0;
+    }
+    #closeListBtn {
+      background: #307fff;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 1em;
+      align-self: flex-end;
+      cursor: pointer;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,123,255,0.12);
+      transition: background 0.2s;
+    }
+    #closeListBtn:hover {
+      background: #0056b3;
+    }
+    #siteSearchInput {
+      border-radius: 12px;
+      border: none;
+      padding: 7px 14px;
+      margin-bottom: 14px;
+      font-size: 1em;
+      background: rgba(255,255,255,0.63);
+      outline: none;
+    }
+    #siteList {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 2px;
+    }
+    .site-item {
+      background: rgba(255,255,255,0.67);
+      border-radius: 15px;
+      margin-bottom: 12px;
+      padding: 12px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      cursor: pointer;
+      transition: background 0.22s;
+    }
+    .site-item:hover {
+      background: #307fff;
+      color: #fff;
+    }
+    #loading {
+      position: fixed;
+      left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      background: rgba(255,255,255,0.44);
+      padding: 28px 45px;
+      border-radius: 24px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.26);
+      font-size: 1.22em;
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.6s;
+      pointer-events: none;
+    }
+    #loading.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #controlBar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30,34,44,0.80);
+      border-radius: 18px;
+      padding: 8px 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+      display: flex;
+      gap: 24px;
+      z-index: 99999;
+    }
+    #controlBar button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.18em;
+      cursor: pointer;
+      transition: color 0.2s;
+      padding: 5px 12px;
+    }
+    #controlBar button:hover {
+      color: #4ad1ff;
+    }
+    @media (max-width:600px) {
+      #siteListModal { width: 90vw;}
+      #searchBar { width: 90vw;}
+      #controlBar { padding: 8px 4px; gap: 12px;}
+    }
+  </style>
+</head>
+<body dir="rtl">
+  <div id="map"></div>
+
+  <!-- شريط البحث -->
+  <div id="searchBar">
+    <input id="searchInput" type="text" placeholder="ابحث عن موقع أثري...">
+    <button id="searchBtn">بحث</button>
+  </div>
+  <button id="openListBtn" title="قائمة المواقع">📖</button>
+
+  <!-- القائمة الجانبية -->
+  <div id="siteListModal">
+    <button id="closeListBtn" title="إغلاق القائمة">✖</button>
+    <input id="siteSearchInput" type="text" placeholder="ابحث في قائمة المواقع...">
+    <div id="siteList"></div>
+  </div>
+
+  <!-- شاشة التحميل -->
+  <div id="loading">جارٍ التحميل...</div>
+
+  <!-- شريط التحكم السفلي -->
+  <div id="controlBar">
+    <button id="homeBtn">🏠 الرئيسية</button>
+    <button id="3dBtn">🗻 ثلاثي الأبعاد</button>
+    <button id="nightBtn">🌙 وضع ليلي</button>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // مواقع تجريبية
+    const sites = [
+      {name: "الأهرامات", lat: 29.9792, lng: 31.1342, desc: "أهرامات الجيزة - مصر"},
+      {name: "قرطاج", lat: 36.8580, lng: 10.3300, desc: "موقع قرطاج الأثري - تونس"},
+      {name: "تدمر", lat: 34.5614, lng: 38.2732, desc: "مدينة تدمر القديمة - سوريا"},
+      {name: "شوشان", lat: 32.1942, lng: 48.2439, desc: "مدينة شوشان التاريخية - إيران"},
+      {name: "جرش", lat: 32.2800, lng: 35.8914, desc: "مدينة جرش الأثرية - الأردن"},
+    ];
+
+    // إعداد الخريطة
+    const map = L.map('map', {
+      zoomControl: false,
+      minZoom: 2,
+      maxZoom: 15,
+      attributionControl: false,
+    }).setView([30.7, 34.8], 4);
+
+    // الخريطة الأساسية
+    let baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      detectRetina: true,
+      maxZoom: 18,
+    }).addTo(map);
+
+    // مؤشرات المواقع
+    let markers = [];
+    function addMarkers(siteArray) {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      siteArray.forEach(site => {
+        const marker = L.marker([site.lat, site.lng], {title: site.name})
+          .addTo(map)
+          .bindPopup(`<strong>${site.name}</strong><br>${site.desc}`);
+        markers.push(marker);
+      });
+    }
+    addMarkers(sites);
+
+    // تحريك الكاميرا بأسلوب Google Earth Studio
+    function flyToSite(site, zoom=8) {
+      map.flyTo([site.lat, site.lng], zoom, {animate:true, duration:1.7, easeLinearity:0.3});
+    }
+
+    // البحث في جميع المواقع
+    function searchSites(text) {
+      text = text.trim();
+      if (!text) return sites;
+      return sites.filter(site =>
+        site.name.includes(text) || site.desc.includes(text)
+      );
+    }
+
+    // بحث سريع
+    document.getElementById('searchBtn').onclick = function() {
+      let val = document.getElementById('searchInput').value;
+      let filtered = searchSites(val);
+      addMarkers(filtered);
+      if (filtered.length) {
+        flyToSite(filtered[0]);
+        markers[0].openPopup();
+      }
+    };
+
+    // القائمة الجانبية
+    document.getElementById('openListBtn').onclick = function() {
+      document.getElementById('siteListModal').classList.add('show');
+      updateSiteList('');
+      document.getElementById('siteSearchInput').value = '';
+    };
+    document.getElementById('closeListBtn').onclick = function() {
+      document.getElementById('siteListModal').classList.remove('show');
+    };
+
+    // تحديث قائمة المواقع
+    function updateSiteList(filterText) {
+      let filtered = searchSites(filterText);
+      let listEl = document.getElementById('siteList');
+      listEl.innerHTML = '';
+      filtered.forEach((site, idx) => {
+        let el = document.createElement('div');
+        el.className = 'site-item';
+        el.innerHTML = `<strong>${site.name}</strong><br><small>${site.desc}</small>`;
+        el.onclick = () => {
+          flyToSite(site, 10);
+          markers[idx].openPopup();
+          document.getElementById('siteListModal').classList.remove('show');
+        };
+        listEl.appendChild(el);
+      });
+    }
+    document.getElementById('siteSearchInput').oninput = function(e){
+      updateSiteList(e.target.value);
+    };
+
+    // التحميل ديناميكي
+    function showLoading() {
+      document.getElementById('loading').classList.add('active');
+    }
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('active');
+    }
+    // مثال: التحميل عند بدء الموقع
+    showLoading();
+    setTimeout(hideLoading, 1300);
+
+    // شريط التحكم السفلي
+    document.getElementById('homeBtn').onclick = function(){
+      flyToSite({lat:30.7, lng:34.8}, 4);
+    };
+    document.getElementById('3dBtn').onclick = function(){
+      alert("العرض ثلاثي الأبعاد قيد التطوير. يمكن دمج Mapbox GL أو Three.js لاحقًا.");
+    };
+    let nightMode = false;
+    document.getElementById('nightBtn').onclick = function(){
+      nightMode = !nightMode;
+      if(nightMode) {
+        baseLayer.setUrl('https://tiles.stadiamaps.com/tiles/alidade_dark/{z}/{x}/{y}{r}.png');
+        document.body.style.background = 'radial-gradient(ellipse at top, #232645 0%, #07080d 100%)';
+      } else {
+        baseLayer.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+        document.body.style.background = 'radial-gradient(ellipse at top, #6a9fcf 0%, #181c24 100%)';
+      }
+    };
+
+    // اختصارات لوحة المفاتيح
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') {
+        document.getElementById('siteListModal').classList.remove('show');
+      }
+    });
+  </script>
+</body>
+</html>
