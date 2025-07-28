@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملف تعريف الموقع الأثري</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px; /* Add margin for multiple profiles */
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            color: #34495e;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .data-item {
+            margin-bottom: 10px;
+        }
+        .data-item strong {
+            color: #e74c3c;
+            display: inline-block;
+            width: 150px; /* Adjust as needed */
+            text-align: right;
+        }
+        .data-item span, .data-item a {
+            color: #555;
+        }
+        .data-item a {
+            text-decoration: none;
+            color: #3498db;
+            font-weight: bold;
+        }
+        .data-item a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul li {
+            background-color: #ecf0f1;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="profilesContainer">
+        </div>
+
+    <script>
+        // في تطبيق حقيقي، سيتم جلب هذه البيانات ديناميكيًا من الواجهة الخلفية (backend)
+        // وليست مضمنة مباشرة في HTML لأغراض الأداء وتنظيم الكود.
+        const archeoData = [
+            {
+                "id": "66294",
+                "labnr": "Gif-6184",
+                "bp": "3490.0",
+                "std": "90.0",
+                "cal_bp": "",
+                "cal_std": "",
+                "delta_c13": "0.0",
+                "source_database": "",
+                "lab_name": "",
+                "material": "charcoal",
+                "species": "Juniperus communis",
+                "feature": "",
+                "feature_type": "shelter",
+                "site": "Abri Rihane",
+                "country": "MA",
+                "lat": "34.48",
+                "lng": "-1.87",
+                "site_type": "shelter",
+                "periods": [
+                    {
+                        "periode": "Neolithic"
+                    }
+                ],
+                "typochronological_units": [
+                    {
+                        "typochronological_unit": "Neolithic"
+                    }
+                ],
+                "ecochronological_units": [
+                    {
+                        "ecochronological_unit": "Neolithic"
+                    }
+                ],
+                "reference": [
+                    {
+                        "reference": "van Willigen 2008"
+                    }
+                ],
+                "enriched_data": {
+                    "wikidata_id": "Q12345678",
+                    "wikidata_url": "https://www.wikidata.org/wiki/Q12345678",
+                    "pleiades_id": "987654321",
+                    "pleiades_url": "https://pleiades.stoa.org/places/987654321",
+                    "periodo_links": [
+                        {
+                            "period_name": "Neolithic",
+                            "periodo_id": "http://perio.do/20G0g",
+                            "periodo_url": "http://perio.do/20G0g"
+                        }
+                    ],
+                    "external_publication_links": [
+                        {
+                            "reference_text": "van Willigen 2008",
+                            "url": "https://www.jstor.org/stable/j.ctt1s4t1g6.15"
+                        }
+                    ],
+                    "other_archaeological_gazetteers": [
+                        {"name": "Archaeological Gazetteer Example", "url": "https://example.com/gazetteer/abri-rihane"}
+                    ]
+                }
+            },
+            {
+                "id": "341996",
+                "labnr": "UtC-6187",
+                "bp": "6540.0",
+                "std": "50.0",
+                "cal_bp": "",
+                "cal_std": "",
+                "delta_c13": "",
+                "source_database": "",
+                "lab_name": "",
+                "material": "",
+                "species": "",
+                "feature": "",
+                "feature_type": "",
+                "site": "Hassi Ouenzga",
+                "country": "MA",
+                "lat": "34.7773",
+                "lng": "-3.2455",
+                "site_type": "",
+                "periods": [],
+                "typochronological_units": [],
+                "ecochronological_units": [],
+                "reference": [
+                    {
+                        "reference": "Linstädter 2004"
+                    }
+                ],
+                "enriched_data": {
+                    "wikidata_id": null,
+                    "wikidata_url": null,
+                    "pleiades_id": null,
+                    "pleiades_url": null,
+                    "periodo_links": [],
+                    "external_publication_links": [
+                        {
+                            "reference_text": "Linstädter 2004",
+                            "url": "https://example.com/link-to-linstaedter-2004-paper"
+                        }
+                    ],
+                    "other_archaeological_gazetteers": []
+                }
+            },
+            {
+                "id": "350172",
+                "labnr": "x-40",
+                "bp": "2080.0",
+                "std": "60.0",
+                "cal_bp": "",
+                "cal_std": "",
+                "delta_c13": "",
+                "source_database": "",
+                "lab_name": "",
+                "material": "",
+                "species": "",
+                "feature": "",
+                "feature_type": "shelter",
+                "site": "Ifri Oudadane",
+                "country": "MA",
+                "lat": "35.2151",
+                "lng": "-3.2542",
+                "site_type": "cave",
+                "periods": [
+                    {
+                        "periode": "Neolithic"
+                    }
+                ],
+                "typochronological_units": [
+                    {
+                        "typochronological_unit": "Neolithic"
+                    }
+                ],
+                "ecochronological_units": [],
+                "reference": [
+                    {
+                        "reference": "Linstädter et al. 2007"
+                    },
+                    {
+                        "reference": "Rupp et al. 2011"
+                    }
+                ],
+                "enriched_data": {
+                    "wikidata_id": "Q12345679",
+                    "wikidata_url": "https://www.wikidata.org/wiki/Q12345679",
+                    "pleiades_id": "987654322",
+                    "pleiades_url": "https://pleiades.stoa.org/places/987654322",
+                    "periodo_links": [
+                        {
+                            "period_name": "Neolithic",
+                            "periodo_id": "http://perio.do/20G0g",
+                            "periodo_url": "http://perio.do/20G0g"
+                        }
+                    ],
+                    "external_publication_links": [
+                        {
+                            "reference_text": "Linstädter et al. 2007",
+                            "url": "https://example.com/link-to-linstaedter-2007-paper"
+                        },
+                        {
+                            "reference_text": "Rupp et al. 2011",
+                            "url": "https://example.com/link-to-rupp-2011-paper"
+                        }
+                    ],
+                    "other_archaeological_gazetteers": []
+                }
+            }
+        ];
+
+        const profilesContainer = document.getElementById('profilesContainer');
+
+        function createSiteProfileHTML(siteData) {
+            return `
+                <div class="container">
+                    <h1>ملف تعريف الموقع الأثري: <span>${siteData.site || 'غير متاح'}</span></h1>
+
+                    <h2 class="section-title">المعلومات الأساسية</h2>
+                    <div class="data-item"><strong>الموقع:</strong> <span>${siteData.site || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>البلد:</strong> <span>${siteData.country || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>خط العرض:</strong> <span>${siteData.lat || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>خط الطول:</strong> <span>${siteData.lng || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>نوع الموقع:</strong> <span>${siteData.site_type || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>المواد الأثرية:</strong> <span>${siteData.material || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>الأنواع البيولوجية:</strong> <span>${siteData.species || 'غير متاح'}</span></div>
+
+                    <h2 class="section-title">التأريخ بالراديوكربون</h2>
+                    <div class="data-item"><strong>رقم المختبر:</strong> <span>${siteData.labnr || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>العمر (BP):</strong> <span>${siteData.bp || 'غير متاح'}</span> ± <span>${siteData.std || 'غير متاح'}</span></div>
+                    <div class="data-item"><strong>دلتا C13:</strong> <span>${siteData.delta_c13 || 'غير متاح'}</span></div>
+
+                    <h2 class="section-title">الفترات والوحدات</h2>
+                    <div class="data-item"><strong>الفترات الأثرية:</strong> <ul class="periodsList"></ul></div>
+                    <div class="data-item"><strong>الوحدات الطبقية-الزمنية:</strong> <ul class="typochronologicalUnitsList"></ul></div>
+                    <div class="data-item"><strong>الوحدات البيئية-الزمنية:</strong> <ul class="ecochronologicalUnitsList"></ul></div>
+
+                    <h2 class="section-title">الروابط الخارجية والمراجع (مقترح)</h2>
+                    <div class="data-item"><strong>ويكيميديا (ويكيبيديا/ويكي بيانات):</strong> <a class="wikidataLink" href="#" target="_blank">رابط ويكيميديا</a></div>
+                    <div class="data-item"><strong>بلياديس (Pleiades):</strong> <a class="pleiadesLink" href="#" target="_blank">رابط بلياديس</a></div>
+                    <div class="data-item"><strong>روابط PeriodO للفترات:</strong> <ul class="periodoLinksList"></ul></div>
+                    <div class="data-item"><strong>المراجع والأبحاث:</strong> <ul class="referencesList"></ul></div>
+                    <div class="data-item"><strong>روابط للمنشورات الخارجية:</strong> <ul class="externalPublicationsList"></ul></div>
+                </div>
+            `;
+        }
+
+        // Helper to populate lists
+        function populateList(listElement, dataArray, keyName) {
+            if (Array.isArray(dataArray) && dataArray.length > 0) {
+                dataArray.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item[keyName] || 'غير متاح';
+                    listElement.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "لا توجد بيانات متاحة.";
+                listElement.appendChild(li);
+            }
+        }
+
+        // Helper to populate reference list (special handling for original 'reference' field)
+        function populateReferences(listElement, referencesData) {
+            if (Array.isArray(referencesData) && referencesData.length > 0) {
+                referencesData.forEach(ref => {
+                    const li = document.createElement('li');
+                    li.textContent = ref.reference || 'غير متاح';
+                    listElement.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "لا توجد بيانات مراجع متاحة.";
+                listElement.appendChild(li);
+            }
+        }
+
+
+        // Loop through the archeoData and create profiles
+        archeoData.forEach(siteData => {
+            const profileDiv = document.createElement('div');
+            profileDiv.innerHTML = createSiteProfileHTML(siteData);
+            profilesContainer.appendChild(profileDiv);
+
+            // Get elements for the current profile
+            const currentProfile = profileDiv.querySelector('.container');
+
+            // Populate lists
+            populateList(currentProfile.querySelector('.periodsList'), siteData.periods, 'periode');
+            populateList(currentProfile.querySelector('.typochronologicalUnitsList'), siteData.typochronological_units, 'typochronological_unit');
+            populateList(currentProfile.querySelector('.ecochronologicalUnitsList'), siteData.ecochronological_units, 'ecochronological_unit');
+            populateReferences(currentProfile.querySelector('.referencesList'), siteData.reference);
+
+            // Populate new suggested fields
+            const wikidataLink = currentProfile.querySelector('.wikidataLink');
+            if (siteData.enriched_data && siteData.enriched_data.wikidata_url) {
+                wikidataLink.href = siteData.enriched_data.wikidata_url;
+                wikidataLink.textContent = "عرض في ويكيبيديا/ويكي بيانات";
+            } else {
+                wikidataLink.textContent = "لا توجد بيانات ويكيبيديا/ويكي بيانات";
+                wikidataLink.removeAttribute('href');
+            }
+
+            const pleiadesLink = currentProfile.querySelector('.pleiadesLink');
+            if (siteData.enriched_data && siteData.enriched_data.pleiades_url) {
+                pleiadesLink.href = siteData.enriched_data.pleiades_url;
+                pleiadesLink.textContent = "عرض في بلياديس (Pleiades)";
+            } else {
+                pleiadesLink.textContent = "لا توجد بيانات بلياديس";
+                pleiadesLink.removeAttribute('href');
+            }
+
+            const periodoLinksList = currentProfile.querySelector('.periodoLinksList');
+            if (siteData.enriched_data && siteData.enriched_data.periodo_links && siteData.enriched_data.periodo_links.length > 0) {
+                siteData.enriched_data.periodo_links.forEach(item => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = item.periodo_url;
+                    a.target = "_blank";
+                    a.textContent = ` ${item.period_name} (PeriodO)`;
+                    li.appendChild(a);
+                    periodoLinksList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "لا توجد روابط PeriodO متاحة.";
+                periodoLinksList.appendChild(li);
+            }
+
+            const externalPublicationsList = currentProfile.querySelector('.externalPublicationsList');
+            if (siteData.enriched_data && siteData.enriched_data.external_publication_links && siteData.enriched_data.external_publication_links.length > 0) {
+                siteData.enriched_data.external_publication_links.forEach(link => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = link.url;
+                    a.target = "_blank";
+                    a.textContent = `${link.reference_text || 'رابط خارجي للمنشور'}`;
+                    li.appendChild(a);
+                    externalPublicationsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "لا توجد روابط منشورات خارجية متاحة.";
+                externalPublicationsList.appendChild(li);
+            }
+        });
+    </script>
+</body>
+</html>
