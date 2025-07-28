@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArchaeoMap - Wikidata</title>
+  <style>
+    html, body, #map {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: sans-serif;
+    }
+    .ol-popup {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-width: 200px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <script type="module">
+    import 'https://cdn.jsdelivr.net/npm/ol@latest/ol.css';
+    import Map from 'https://cdn.jsdelivr.net/npm/ol@latest/Map.js';
+    import View from 'https://cdn.jsdelivr.net/npm/ol@latest/View.js';
+    import TileLayer from 'https://cdn.jsdelivr.net/npm/ol@latest/layer/Tile.js';
+    import OSM from 'https://cdn.jsdelivr.net/npm/ol@latest/source/OSM.js';
+    import {fromLonLat} from 'https://cdn.jsdelivr.net/npm/ol@latest/proj.js';
+    import Feature from 'https://cdn.jsdelivr.net/npm/ol@latest/Feature.js';
+    import Point from 'https://cdn.jsdelivr.net/npm/ol@latest/geom/Point.js';
+    import VectorLayer from 'https://cdn.jsdelivr.net/npm/ol@latest/layer/Vector.js';
+    import VectorSource from 'https://cdn.jsdelivr.net/npm/ol@latest/source/Vector.js';
+    import {Icon, Style} from 'https://cdn.jsdelivr.net/npm/ol@latest/style.js';
+    import Overlay from 'https://cdn.jsdelivr.net/npm/ol@latest/Overlay.js';
+
+    const map = new Map({
+      target: 'map',
+      layers: [
+        new TileLayer({ source: new OSM() })
+      ],
+      view: new View({
+        center: fromLonLat([0, 30]),
+        zoom: 2
+      })
+    });
+
+    const vectorSource = new VectorSource();
+    const vectorLayer = new VectorLayer({ source: vectorSource });
+    map.addLayer(vectorLayer);
+
+    const popup = document.createElement('div');
+    popup.className = 'ol-popup';
+    const overlay = new Overlay({
+      element: popup,
+      autoPan: true,
+      offset: [0, -15],
+      positioning: 'bottom-center'
+    });
+    map.addOverlay(overlay);
+
+    map.on('singleclick', evt => {
+      const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+      if (feature) {
+        const coords = feature.getGeometry().getCoordinates();
+        const title = feature.get('label');
+        const arLabel = feature.get('arLabel');
+        const link = feature.get('link');
+        popup.innerHTML = `<strong>${title}</strong><br/>` +
+                          (arLabel ? `<em>${arLabel}</em><br/>` : '') +
+                          `<a href="${link}" target="_blank">Read more</a>`;
+        overlay.setPosition(coords);
+      } else {
+        overlay.setPosition(undefined);
+      }
+    });
+
+    async function loadArchaeologicalSites() {
+      const endpoint = 'https://query.wikidata.org/sparql?query=';
+      const query = `
+        SELECT ?item ?itemLabel ?itemLabelAr ?coord WHERE {
+          ?item wdt:P31 wd:Q839954.
+          ?item wdt:P625 ?coord.
+          SERVICE wikibase:label {
+            bd:serviceParam wikibase:language "en" .
+            ?item rdfs:label ?itemLabelAr .
+            FILTER (lang(?itemLabelAr) = "ar")
+          }
+        }
+        LIMIT 1000
+      `;
+
+      const url = endpoint + encodeURIComponent(query);
+      const headers = { Accept: "application/sparql-results+json" };
+      const res = await fetch(url, { headers });
+      const data = await res.json();
+
+      for (let entry of data.results.bindings) {
+        const coordStr = entry.coord.value.replace('Point(', '').replace(')', '');
+        const [lon, lat] = coordStr.split(' ').map(Number);
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([lon, lat])),
+          label: entry.itemLabel.value,
+          arLabel: entry.itemLabelAr?.value || '',
+          link: entry.item.value
+        });
+        feature.setStyle(new Style({
+          image: new Icon({
+            src: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg',
+            scale: 0.05
+          })
+        }));
+        vectorSource.addFeature(feature);
+      }
+    }
+
+    loadArchaeologicalSites();
+  </script>
+</body>
+</html>
