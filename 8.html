@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>مواقع أثرية من ويكي بيانات</title>
+  <title>Archeopedia - خريطة المواقع الأثرية المغربية</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,83 +11,198 @@
       height: 100%;
       margin: 0;
       direction: rtl;
-      font-family: sans-serif;
+      font-family: 'Cairo', 'Roboto', Arial, sans-serif;
+      background: #e5e5e5;
+      color: #222;
     }
     #map {
-      width: 100%;
+      width: 100vw;
       height: 100vh;
+      z-index: 1;
+    }
+    #searchBar {
+      position: absolute;
+      top: 20px; left: 50%; transform: translateX(-50%);
+      background: #fff;
+      padding: 10px 20px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.11);
+      z-index: 9999;
+      width: 320px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #searchInput {
+      flex: 1;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 1em;
+    }
+    #openListBtn {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    #siteListModal {
+      display: none;
+      position: fixed;
+      top: 0; right: 0;
+      width: 350px; height: 100vh;
+      background: #fff;
+      overflow-y: auto;
+      z-index: 99999;
+      box-shadow: -2px 0 8px #aaa;
+      padding: 18px 12px;
+    }
+    #siteListModal h2 {
+      margin-top: 0;
+      font-size: 1.3em;
+    }
+    #siteSearchInput {
+      width: 95%;
+      margin: 8px 0;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #bbb;
+      font-size: 1em;
+      display: block;
+    }
+    #siteList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    #siteList li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    #siteList li:hover {
+      background: #f3f3f3;
+    }
+    #closeListBtn {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 1em;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .leaflet-popup-content {
+      min-width: 250px;
+      font-size: 1.05em;
+    }
+    .popup-img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 8px 0;
+      display: block;
+    }
+    .popup-desc {
+      margin: 8px 0;
+      color: #333;
+    }
+    .popup-links {
+      margin-top: 6px;
+      font-size: 0.95em;
     }
     #loading {
       position: absolute;
       top: 20px;
       right: 20px;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.95);
       padding: 10px 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      z-index: 9999;
-      font-size: 1.2em;
+      z-index: 99998;
+      font-size: 1.15em;
       display: none;
+    }
+    @media (max-width: 600px) {
+      #siteListModal { width: 100vw; }
+      #searchBar { width: 96vw; left: 2vw; transform: none;}
     }
   </style>
 </head>
 <body>
-
-  <div id="loading">جاري تحميل البيانات...</div>
   <div id="map"></div>
-
-  <!-- Leaflet JS -->
+  <div id="loading">يتم تحميل المواقع الأثرية...</div>
+  <div id="searchBar">
+    <input type="text" id="searchInput" placeholder="بحث في الخريطة...">
+    <button id="openListBtn">📋 جميع المواقع</button>
+  </div>
+  <div id="siteListModal">
+    <h2>📋 جميع المواقع الأثرية</h2>
+    <input type="text" id="siteSearchInput" placeholder="بحث عن موقع...">
+    <ul id="siteList"></ul>
+    <button id="closeListBtn">إغلاق</button>
+  </div>
+  <footer style="position:fixed;bottom:0;left:0;width:100vw;background:#fafafa;padding:6px 0;text-align:center;font-size:0.95em;z-index:999;">
+    بيانات من ويكي بيانات | خريطة: Leaflet & OpenStreetMap
+  </footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <script>
-    // إظهار رسالة التحميل
-    document.getElementById('loading').style.display = 'block';
+    // --- خريطة ---
+    const map = L.map('map').setView([33.97, -6.84], 6); // المغرب
 
-    // إنشاء الخريطة
-    var map = L.map('map').setView([31.7917, -7.0926], 5);
-
-    // طبقة OpenStreetMap بدلاً من Wikimedia
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // استعلام SPARQL من Wikidata (مواقع أثرية في المغرب كمثال)
-    const sparqlQuery = `
-      SELECT ?site ?siteLabel ?coord WHERE {
-        ?site wdt:P31 wd:Q839954 ;  # موقع أثري
-              wdt:P625 ?coord ;
-              wdt:P17 wd:Q1028 .   # المغرب
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "ar,en". }
-      } LIMIT 100
-    `;
+    // --- متغيرات المواقع ---
+    let archeoSites = []; // البيانات من ويكي بيانات
+    let markers = []; // كل العلامات
+    let results = []; // نتائج الاستعلام
+    let wikidataFetched = {}; // كاش لجلب التفاصيل
+    let lastQuery = '';
 
-    const endpointUrl = 'https://query.wikidata.org/sparql';
-    const fullUrl = endpointUrl + '?query=' + encodeURIComponent(sparqlQuery);
-    const headers = { 'Accept': 'application/sparql-results+json' };
+    // --- جلب المواقع الأثرية من ويكي بيانات ---
+    document.getElementById('loading').style.display = 'block';
+    fetchSitesFromWikidata();
 
-    fetch(fullUrl, { headers })
-      .then(body => body.json())
-      .then(json => {
-        const results = json.results.bindings;
+    function fetchSitesFromWikidata() {
+      // SPARQL لجلب مواقع المغرب فقط (يمكنك توسيعه)
+      const endpoint = "https://query.wikidata.org/sparql";
+      const sparql = `
+        SELECT ?site ?siteLabel ?coord WHERE {
+          ?site wdt:P31/wdt:P279* wd:Q839954 ; # instance of archaeological site
+                wdt:P625 ?coord ;
+                wdt:P17 wd:Q1028. # المغرب
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "ar,en". }
+        }
+        LIMIT 120
+      `;
+      fetch(endpoint + "?query=" + encodeURIComponent(sparql), {
+        headers: { 'Accept': 'application/sparql-results+json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        results = data.results.bindings;
         if (!results.length) {
           alert('لم يتم العثور على مواقع أثرية!');
         }
-        results.forEach(item => {
-          if (!item.coord || !item.siteLabel || !item.site) return; // تحقق من البيانات
-          const match = item.coord.value.match(/Point\(([-\d\.]+) ([-\d\.]+)\)/);
-          if (!match) return; // تحقق من الإحداثيات
-          const lon = parseFloat(match[1]);
-          const lat = parseFloat(match[2]);
-          const label = item.siteLabel.value;
-          const url = item.site.value;
-
-          if (!isNaN(lat) && !isNaN(lon)) {
-            L.marker([lat, lon])
-              .addTo(map)
-              .bindPopup(`<strong>${label}</strong><br><a href="${url}" target="_blank">عرض في Wikidata</a>`);
+        archeoSites = results.map(item => {
+          let match = item.coord.value.match(/Point\(([-\d\.]+) ([-\d\.]+)\)/);
+          return {
+            siteLabel: item.siteLabel.value,
+            wikidataUrl: item.site.value,
+            lat: match ? parseFloat(match[2]) : null,
+            lng: match ? parseFloat(match[1]) : null
           }
-        });
+        }).filter(s=>s.lat && s.lng && s.siteLabel && s.wikidataUrl);
+        addMarkers(archeoSites);
+        setupSearchBar();
+        setupSiteListModal();
         document.getElementById('loading').style.display = 'none';
       })
       .catch(err => {
@@ -95,7 +210,138 @@
         alert('فشل في جلب البيانات من ويكي بيانات');
         console.error('فشل في جلب البيانات من ويكي بيانات', err);
       });
-  </script>
+    }
 
+    // --- إضافة العلامات للخريطة ---
+    function addMarkers(sites) {
+      // إزالة علامات سابقة
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      sites.forEach(site => {
+        const marker = L.marker([site.lat, site.lng])
+          .addTo(map)
+          .on('click', function() {
+            showWikidataPopup(site);
+          });
+        markers.push(marker);
+      });
+    }
+
+    // --- نافذة منبثقة بمعلومات ويكيداتا ---
+    function showWikidataPopup(site) {
+      // جلب التفاصيل من الكاش أو من ويكيداتا
+      const id = site.wikidataUrl.split('/').pop();
+      if (wikidataFetched[id]) {
+        renderPopup(site, wikidataFetched[id]);
+        return;
+      }
+      // إظهار نافذة تحميل مؤقتة
+      L.popup()
+        .setLatLng([site.lat, site.lng])
+        .setContent(`<div>جاري جلب تفاصيل الموقع...</div>`)
+        .openOn(map);
+
+      fetch(`https://www.wikidata.org/wiki/Special:EntityData/${id}.json`)
+        .then(r => r.json())
+        .then(data => {
+          const entity = data.entities[id];
+          // استخراج بيانات
+          const label = entity.labels?.ar?.value || entity.labels?.en?.value || site.siteLabel;
+          const description = entity.descriptions?.ar?.value || entity.descriptions?.en?.value || '';
+          // صورة رئيسية
+          const imageClaim = entity.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+          const imageUrl = imageClaim ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imageClaim)}?width=350` : '';
+          // روابط خارجية
+          let moreLinks = `<a href="${site.wikidataUrl}" target="_blank">ويكيداتا</a>`;
+          // ويكيبيديا
+          if (entity.sitelinks?.arwiki?.url)
+            moreLinks += ` | <a href="${entity.sitelinks.arwiki.url}" target="_blank">ويكيبيديا</a>`;
+          else if (entity.sitelinks?.enwiki?.url)
+            moreLinks += ` | <a href="${entity.sitelinks.enwiki.url}" target="_blank">Wikipedia</a>`;
+          // حفظ بالكاش
+          wikidataFetched[id] = {label, description, imageUrl, moreLinks};
+          renderPopup(site, wikidataFetched[id]);
+        })
+        .catch(() => {
+          renderPopup(site, {
+            label: site.siteLabel,
+            description: '',
+            imageUrl: '',
+            moreLinks: `<a href="${site.wikidataUrl}" target="_blank">ويكيداتا</a>`
+          });
+        });
+    }
+
+    function renderPopup(site, details) {
+      let html = `<strong>${details.label}</strong>`;
+      if (details.imageUrl)
+        html += `<br><img src="${details.imageUrl}" class="popup-img" alt="صورة الموقع">`;
+      if (details.description)
+        html += `<div class="popup-desc">${details.description}</div>`;
+      html += `<div class="popup-links">${details.moreLinks}</div>`;
+      L.popup()
+        .setLatLng([site.lat, site.lng])
+        .setContent(html)
+        .openOn(map);
+    }
+
+    // --- البحث في الخريطة ---
+    function setupSearchBar() {
+      const input = document.getElementById('searchInput');
+      input.addEventListener('input', function(e) {
+        const query = e.target.value.trim().toLowerCase();
+        lastQuery = query;
+        // تصفية المواقع
+        let filtered = !query ? archeoSites : archeoSites.filter(site =>
+          site.siteLabel.toLowerCase().includes(query)
+        );
+        addMarkers(filtered);
+        if (filtered.length > 0 && query.length > 1) {
+          map.setView([filtered[0].lat, filtered[0].lng], 8);
+        }
+      });
+    }
+
+    // --- نافذة جميع المواقع مع البحث بالقائمة ---
+    function setupSiteListModal() {
+      // فتح وغلق
+      document.getElementById('openListBtn').onclick = function() {
+        document.getElementById('siteListModal').style.display = 'block';
+        updateSiteList('');
+        document.getElementById('siteSearchInput').value = '';
+      };
+      document.getElementById('closeListBtn').onclick = function() {
+        document.getElementById('siteListModal').style.display = 'none';
+      };
+      // بحث في القائمة
+      document.getElementById('siteSearchInput').addEventListener('input', function(e) {
+        updateSiteList(e.target.value);
+      });
+      updateSiteList('');
+    }
+
+    // تحديث قائمة المواقع في النافذة الجانبية
+    function updateSiteList(query) {
+      const list = document.getElementById('siteList');
+      query = (query || '').trim().toLowerCase();
+      const filtered = !query ? archeoSites : archeoSites.filter(site =>
+        site.siteLabel.toLowerCase().includes(query)
+      );
+      list.innerHTML = '';
+      filtered.forEach(site => {
+        const li = document.createElement('li');
+        li.textContent = site.siteLabel;
+        li.onclick = () => {
+          map.setView([site.lat, site.lng], 12);
+          showWikidataPopup(site);
+          document.getElementById('siteListModal').style.display = 'none';
+        };
+        list.appendChild(li);
+      });
+      if (!filtered.length) {
+        list.innerHTML = `<li>لا توجد نتائج.</li>`;
+      }
+    }
+  </script>
 </body>
 </html>
