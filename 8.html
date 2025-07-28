@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مواقع أثرية من ويكي بيانات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      direction: rtl;
+      font-family: sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // إنشاء الخريطة
+    var map = L.map('map').setView([31.7917, -7.0926], 5);
+
+    // طبقة ويكيميديا
+    L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; Wikimedia Maps'
+    }).addTo(map);
+
+    // استعلام SPARQL من Wikidata (مواقع أثرية في المغرب كمثال)
+    const sparqlQuery = `
+      SELECT ?site ?siteLabel ?coord WHERE {
+        ?site wdt:P31 wd:Q839954 ;  # موقع أثري
+              wdt:P625 ?coord ;
+              wdt:P17 wd:Q1028 .   # المغرب
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "ar,en". }
+      } LIMIT 100
+    `;
+
+    const endpointUrl = 'https://query.wikidata.org/sparql';
+    const fullUrl = endpointUrl + '?query=' + encodeURIComponent(sparqlQuery);
+    const headers = { 'Accept': 'application/sparql-results+json' };
+
+    fetch(fullUrl, { headers })
+      .then(body => body.json())
+      .then(json => {
+        const results = json.results.bindings;
+        results.forEach(item => {
+          const coord = item.coord.value.match(/Point\\(([-\\d\\.]+) ([-\\d\\.]+)\\)/);
+          const lon = parseFloat(coord[1]);
+          const lat = parseFloat(coord[2]);
+          const label = item.siteLabel.value;
+          const url = item.site.value;
+
+          L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup(`<strong>${label}</strong><br><a href="${url}" target="_blank">عرض في Wikidata</a>`);
+        });
+      })
+      .catch(err => {
+        console.error('فشل في جلب البيانات من ويكي بيانات', err);
+      });
+  </script>
+
+</body>
+</html>
