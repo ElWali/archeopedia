@@ -1,280 +1,125 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التراث الرقمي - ما قبل التاريخ</title>
-
-    <!-- Google Fonts: استخدام خط Cairo -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-
-    <!-- تحميل مكتبة model-viewer -->
-    <!-- يفضل وضعها هنا لتبدأ بالتحميل مبكراً -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-
-    <style>
-        /* ======== إعدادات أساسية وتصميم الخطوط ======== */
-        :root {
-            --background-color: #f0f2f5;
-            --surface-color: #ffffff;
-            --text-color: #1c1e21;
-            --subtle-text-color: #606770;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --accent-color: #0056b3;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            line-height: 1.8;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        h1, h2, h3 {
-            font-weight: 700;
-        }
-
-        /* ======== تصميم الهيدر والفوتر ======== */
-        .site-header, .site-footer {
-            text-align: center;
-            padding: 3rem 1.5rem;
-            background-color: var(--surface-color);
-        }
-
-        .site-header {
-            border-bottom: 1px solid #ddd;
-        }
-
-        .site-header h1 {
-            color: var(--accent-color);
-            margin-block-end: 0.5rem;
-        }
-
-        .site-header p {
-            max-width: 700px;
-            margin-inline: auto; /* للتوسيط في RTL و LTR */
-            color: var(--subtle-text-color);
-        }
-
-        .site-footer {
-            margin-block-start: 2rem;
-            border-top: 1px solid #ddd;
-            font-size: 0.9rem;
-        }
-
-
-        /* ======== تصميم الجدول الزمني ======== */
-        .timeline {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem 1rem;
-            gap: 2.5rem;
-        }
-
-        .timeline-item {
-            background: var(--surface-color);
-            border-radius: 12px;
-            box-shadow: 0 4px 15px var(--shadow-color);
-            padding: 2rem;
-            max-width: 720px;
-            width: 100%;
-            border-top: 5px solid var(--accent-color);
-            
-            /* إعدادات تأثير الظهور */
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-        }
-
-        /* كلاس يتم إضافته عبر الجافاسكريبت لجعل العنصر مرئياً */
-        .timeline-item.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .timeline-content .era-date {
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: var(--subtle-text-color);
-            margin-block-start: -1rem;
-            margin-block-end: 1rem;
-        }
-
-        /* ======== تصميم عارض النماذج ثلاثية الأبعاد ======== */
-        model-viewer {
-            width: 100%;
-            height: 450px;
-            border-radius: 8px;
-            margin-block: 1.5rem; /* مسافة علوية وسفلية */
-            background-color: #e9e9e9;
-            --poster-color: #f8f8f8; /* لون الخلفية قبل تحميل النموذج */
-        }
-        
-        .timeline-item small {
-            display: block;
-            text-align: center;
-            color: var(--subtle-text-color);
-            font-weight: bold;
-            margin-block-start: 1rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Prehistory Timeline - Heritage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Georgia, serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f7f7f7;
+      color: #333;
+    }
+    header {
+      background-color: #2f4f4f;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    section {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      margin-bottom: 20px;
+      border-left: 5px solid #2f4f4f;
+    }
+    h2 {
+      color: #2f4f4f;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+    .location {
+      margin: 10px 0;
+      cursor: pointer;
+      background: #eee;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .location:hover {
+      background: #ddd;
+    }
+    .details {
+      display: none;
+      margin-top: 5px;
+      padding-left: 10px;
+      border-left: 2px solid #aaa;
+    }
+  </style>
 </head>
 <body>
 
-    <header class="site-header">
-        <h1>التراث الرقمي</h1>
-        <p>هذا جدول زمني تجريبي لعصور ما قبل التاريخ، يُروى من خلال مجموعة مختارة من القطع الأثرية القابلة للاكتشاف. تم إنشاء كل قطعة أثرية كنموذج ثلاثي الأبعاد يمكنك التفاعل معه أو عرضه في الواقع المعزز (AR).</p>
-    </header>
+<header>
+  <h1>Prehistory in Britain</h1>
+  <p>Explore the Palaeolithic, Mesolithic and Neolithic periods</p>
+</header>
 
-    <main class="timeline">
+<section>
+  <h2>Palaeolithic Period</h2>
+  <p>The earliest humans arrived in Britain over 800,000 years ago.</p>
 
-        <!-- ===== العصر الحجري القديم الأسفل ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحجري القديم الأسفل</h2>
-                <div class="era-date">حوالي 2,500,000 - 200,000 قبل الميلاد</div>
-                <p>يُعرف العصر الحجري القديم الأسفل أيضًا باسم العصر الحجري المبكر، وهو أقدم تقسيم للعصر الحجري القديم. يمتد من الزمن الذي ظهرت فيه أولى الأدلة على صناعة الأدوات الحجرية واستخدامها من قبل أشباه البشر.</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/1.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لفأس يدوي"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>فأس يدوي</small>
-            </div>
-        </section>
+  <div class="location" onclick="toggleDetails(this)">
+    🪨 Happisburgh (Norfolk)
+    <div class="details">
+      <p>Earliest evidence of humans in Britain. Stone tools found along ancient estuary.</p>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Happisburgh_-_geograph.org.uk_-_1009586.jpg/640px-Happisburgh_-_geograph.org.uk_-_1009586.jpg" alt="Happisburgh">
+    </div>
+  </div>
 
-        <!-- ===== العصر الحجري القديم الأوسط ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحجري القديم الأوسط</h2>
-                <div class="era-date">حوالي 200,000 - 45,000 قبل الميلاد</div>
-                <p>هو القسم الثاني من العصر الحجري القديم. شهد هذا العصر ظهور تقنيات أكثر تطورًا لصناعة الأدوات الحجرية، مثل تقنية "لوفالوا"، والتي سمحت بإنتاج شفرات ورقائق حجرية أكثر دقة وتخصصًا.</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/2.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لرأس رمح من الصوان"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>رأس رمح من الصوان</small>
-            </div>
-        </section>
-        
-        <!-- ===== العصر الحجري القديم الأعلى ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحجري القديم الأعلى</h2>
-                <div class="era-date">حوالي 45,000 - 10,000 قبل الميلاد</div>
-                <p>هو التقسيم الثالث والأخير للعصر الحجري القديم. تميز هذا العصر بظهور الإنسان العاقل (Homo sapiens) وانتشار الفن الصخري، والمنحوتات الصغيرة، والأدوات المصنوعة من العظام والعاج.</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/3.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لتمثال فينوس ويلندورف"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>فينوس ويلندورف</small>
-            </div>
-        </section>
+  <div class="location" onclick="toggleDetails(this)">
+    🦴 Boxgrove (West Sussex)
+    <div class="details">
+      <p>500,000-year-old remains of early humans and tools near a chalk cliff.</p>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Boxgrove_quarry_west_sussex_uk.jpg/640px-Boxgrove_quarry_west_sussex_uk.jpg" alt="Boxgrove">
+    </div>
+  </div>
+</section>
 
-        <!-- ===== العصر الحجري الوسيط ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحجري الوسيط</h2>
-                <div class="era-date">حوالي 10,000 - 5,000 قبل الميلاد</div>
-                <p>يُعرف أيضًا بالعصر الحجري الأوسط، وهو الفترة بين العصر الحجري القديم والعصر الحجري الحديث. تميزت هذه الفترة بتكيف الإنسان مع التغيرات المناخية بعد نهاية العصر الجليدي، وتطوير أدوات حجرية صغيرة ودقيقة (Microliths).</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/4.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لشفرة صوان مركبة"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>شفرة صوان مركبة</small>
-            </div>
-        </section>
+<section>
+  <h2>Mesolithic Period</h2>
+  <p>After the Ice Age, forests spread and people adapted to a changing climate.</p>
 
-        <!-- ===== العصر الحجري الحديث ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحجري الحديث</h2>
-                <div class="era-date">حوالي 5,000 - 2,500 قبل الميلاد</div>
-                <p>يُعرف أيضًا بالعصر الحجري الجديد، وهو القسم الأخير من العصر الحجري. شهد هذا العصر ثورة زراعية أدت إلى استقرار البشر في قرى دائمة، وتدجين الحيوانات، وصناعة الفخار لتخزين الطعام والمياه.</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/5.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لوعاء فخاري"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>وعاء فخاري</small>
-            </div>
-        </section>
+  <div class="location" onclick="toggleDetails(this)">
+    🌲 Star Carr (North Yorkshire)
+    <div class="details">
+      <p>Site showing early dwellings and deer head-dresses used in rituals.</p>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Star_Carr_dig_site.jpg/640px-Star_Carr_dig_site.jpg" alt="Star Carr">
+    </div>
+  </div>
+</section>
 
-        <!-- ===== العصر البرونزي ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر البرونزي</h2>
-                <div class="era-date">حوالي 2,500 - 800 قبل الميلاد</div>
-                <p>فترة تاريخية تميزت باستخدام البرونز، وهو سبيكة من النحاس والقصدير. أدى اكتشاف هذه المادة إلى صناعة أسلحة وأدوات وزخارف أكثر متانة وفعالية، وظهرت في بعض المناطق بدايات الكتابة (Proto-writing).</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/6.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لسيف برونزي"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>سيف برونزي</small>
-            </div>
-        </section>
+<section>
+  <h2>Neolithic Period</h2>
+  <p>The first farmers arrive and start building monumental structures.</p>
 
-        <!-- ===== العصر الحديدي ===== -->
-        <section class="timeline-item">
-            <div class="timeline-content">
-                <h2>العصر الحديدي</h2>
-                <div class="era-date">حوالي 800 - 1 قبل الميلاد</div>
-                <p>هي الحقبة الأخيرة في تقسيم عصور ما قبل التاريخ وبدايات التاريخ المسجل. تتميز هذه الفترة باعتماد الإنسان على صهر الحديد وتصنيع الأدوات والأسلحة منه، مما أحدث تطورًا كبيرًا في الزراعة والحروب والمجتمع.</p>
-                <model-viewer src="https://heritage.candle.digital/prehistory/assets/artefacts/7.min.glb"
-                              alt="نموذج ثلاثي الأبعاد لخوذة حديدية"
-                              camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look">
-                </model-viewer>
-                <small>خوذة حديدية</small>
-            </div>
-        </section>
+  <div class="location" onclick="toggleDetails(this)">
+    ⛰️ Skara Brae (Orkney)
+    <div class="details">
+      <p>Well-preserved stone-built houses from around 3100 BC.</p>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Skara_Brae_view.jpg/640px-Skara_Brae_view.jpg" alt="Skara Brae">
+    </div>
+  </div>
 
-    </main>
+  <div class="location" onclick="toggleDetails(this)">
+    🔆 Stonehenge (Wiltshire)
+    <div class="details">
+      <p>Famous stone circle aligned with the solstice. Built in stages starting c. 3000 BC.</p>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Stonehenge2007_07_30.jpg/640px-Stonehenge2007_07_30.jpg" alt="Stonehenge">
+    </div>
+  </div>
+</section>
 
-    <footer class="site-footer">
-        <p>تجربة من Candle</p>
-    </footer>
+<script>
+  function toggleDetails(elem) {
+    const detail = elem.querySelector('.details');
+    detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
+  }
+</script>
 
-    <script>
-        // انتظر حتى يتم تحميل كامل محتوى الصفحة
-        document.addEventListener('DOMContentLoaded', () => {
-    
-            // تحديد جميع عناصر الجدول الزمني التي نريد إظهارها تدريجياً
-            const timelineItems = document.querySelectorAll('.timeline-item');
-    
-            // التأكد من وجود عناصر لتتم مراقبتها
-            if (timelineItems.length === 0) return;
-
-            // إعداد خيارات Intersection Observer
-            // سيتم تفعيل الملاحظ عندما يكون 15% من العنصر مرئياً
-            const options = {
-                root: null, // الملاحظة بالنسبة لإطار العرض (viewport)
-                rootMargin: '0px',
-                threshold: 0.15
-            };
-    
-            // إنشاء كائن الملاحظ (Observer)
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    // إذا كان العنصر داخل إطار العرض
-                    if (entry.isIntersecting) {
-                        // أضف كلاس 'is-visible' لإظهار العنصر مع تأثير CSS
-                        entry.target.classList.add('is-visible');
-                        
-                        // أوقف مراقبة هذا العنصر بعد أن أصبح مرئياً لتحسين الأداء
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, options);
-    
-            // ابدأ بمراقبة كل عنصر من عناصر الجدول الزمني
-            timelineItems.forEach(item => {
-                observer.observe(item);
-            });
-        });
-    </script>
 </body>
 </html>
