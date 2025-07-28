@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Archeopedia - Moroccan Archaeological Sites</title>
+  <title>Archeopedia - المواقع الأثرية المغربية</title>
   <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
   <style>
     body {
-      font-family: Roboto, Arial, sans-serif;
+      font-family: 'Cairo', 'Roboto', Arial, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f9f9f9;
+      color: #222;
+      transition: background 0.2s, color 0.2s;
     }
     header, footer {
       background: #fff;
       padding: 1em;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.07);
     }
     nav {
       display: flex;
@@ -24,20 +26,26 @@
       gap: 2em;
       background: #f1f1f1;
       padding: 0.5em;
+      font-size: 1.1em;
     }
     nav a {
       text-decoration: none;
       color: #0077cc;
       font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.35em;
     }
     .container {
       display: flex;
       flex-direction: row;
       height: calc(100vh - 160px);
+      direction: rtl;
     }
     #map {
       width: 70%;
       height: 100%;
+      min-height: 350px;
     }
     #sidebar {
       width: 30%;
@@ -51,6 +59,16 @@
     .site-card {
       border-bottom: 1px solid #ddd;
       padding: 0.5em 0;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .site-card:hover {
+      background: #f7f7f7;
+    }
+    .site-card .site-info {
+      font-size: 0.95em;
+      color: #666;
+      margin-top: 2px;
     }
     .search {
       padding: 1em 0;
@@ -63,6 +81,8 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       box-sizing: border-box;
+      background: #fdfdfd;
+      direction: rtl;
     }
     .autocomplete-suggestions {
       position: absolute;
@@ -73,19 +93,32 @@
       border-top: none;
       z-index: 999;
       width: 100%;
-      max-height: 220px;
+      max-height: 260px;
       overflow-y: auto;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       display: none;
     }
     .autocomplete-suggestions div {
-      padding: 0.5em;
+      padding: 0.6em;
       cursor: pointer;
       transition: background 0.2s;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .autocomplete-suggestions div:last-child {
+      border-bottom: none;
     }
     .autocomplete-suggestions div.active,
     .autocomplete-suggestions div:hover {
       background-color: #e0e0e0;
+    }
+    .no-suggestions {
+      padding: 0.7em;
+      color: #888;
+      text-align: center;
+      background: #fafafa;
     }
     .detail-page {
       padding: 2em;
@@ -105,39 +138,105 @@
     table th, table td {
       border: 1px solid #ccc;
       padding: 0.5em;
-      text-align: left;
+      text-align: right;
+    }
+    .share-btn {
+      margin-top: 1em;
+      padding: 0.6em 1em;
+      background: #0077cc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .share-btn:hover {
+      background: #005fa3;
+    }
+    .filter-bar {
+      padding: 0.5em 0;
+      display: flex;
+      gap: 1em;
+      flex-wrap: wrap;
+      font-size: 0.95em;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .filter-bar label {
+      font-weight: bold;
+      margin-right: 0.5em;
+    }
+    .filter-bar select {
+      padding: 0.3em 0.7em;
+      border-radius: 3px;
+      border: 1px solid #bbb;
     }
     @media (max-width: 900px) {
       .container { flex-direction: column; }
       #map, #sidebar { width: 100%; height: 50vh; }
+      .filter-bar { flex-direction: column; gap: 0.5em; }
+    }
+    /* وضع ليلي */
+    body.dark-mode {
+      background: #232323;
+      color: #eee;
+    }
+    body.dark-mode #sidebar,
+    body.dark-mode .detail-page,
+    body.dark-mode header,
+    body.dark-mode footer {
+      background: #232323;
+      color: #eee;
+    }
+    body.dark-mode .autocomplete-suggestions {
+      background: #222;
+      color: #eee;
+      border-color: #444;
+    }
+    body.dark-mode .autocomplete-suggestions div.active,
+    body.dark-mode .autocomplete-suggestions div:hover {
+      background: #333;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Archeopedia: Moroccan Archaeological Sites</h1>
+    <h1>Archeopedia: المواقع الأثرية المغربية</h1>
+    <button class="share-btn" onclick="toggleDarkMode()" style="float:left;">🌙/☀️</button>
   </header>
   <nav>
-    <a href="#" onclick="showHome();return false;">🏠 Home Map</a>
-    <a href="#" onclick="showList();return false;">📋 Sites List</a>
+    <a href="#" onclick="showHome();return false;">🏠 الصفحة الرئيسية</a>
+    <a href="#" onclick="showList();return false;">📋 قائمة المواقع</a>
   </nav>
 
   <div id="home" class="container">
     <div id="map"></div>
     <div id="sidebar">
-      <div class="search">
-        <input type="text" id="searchBox" autocomplete="off" placeholder="Search for a site...">
-        <div id="searchSuggestions" class="autocomplete-suggestions"></div>
+      <div class="filter-bar">
+        <label for="periodFilter">الفترة:</label>
+        <select id="periodFilter" onchange="applyFilters()">
+          <option value="">الكل</option>
+        </select>
+        <label for="regionFilter">الجهة:</label>
+        <select id="regionFilter" onchange="applyFilters()">
+          <option value="">الكل</option>
+        </select>
+      </div>
+      <div class="search" aria-label="بحث عن موقع">
+        <input type="text" id="searchBox" autocomplete="off" placeholder="ابحث عن موقع..." aria-autocomplete="list" aria-controls="searchSuggestions" />
+        <div id="searchSuggestions" class="autocomplete-suggestions" role="listbox"></div>
       </div>
       <div id="siteList"></div>
-      <button onclick="resetMap()">🔄 Reset Map View</button>
+      <button onclick="resetMap()">🔄 إعادة ضبط الخريطة</button>
+      <button onclick="locateMe()" style="margin-top:10px;">📍 موقعي الحالي</button>
     </div>
   </div>
 
   <div id="listView" style="display:none; padding:2em;">
-    <h2>📋 All Sites</h2>
+    <h2>📋 جميع المواقع</h2>
     <div class="search">
-      <input type="text" id="listSearch" autocomplete="off" placeholder="Search...">
+      <input type="text" id="listSearch" autocomplete="off" placeholder="ابحث..." />
       <div id="listSuggestions" class="autocomplete-suggestions"></div>
     </div>
     <ul id="allSites"></ul>
@@ -147,10 +246,12 @@
     <h2 id="siteName"></h2>
     <div id="detailMap" class="detail-map"></div>
     <table id="siteTable"></table>
+    <button class="share-btn" onclick="shareSite()">🔗 مشاركة الموقع</button>
+    <button class="share-btn" onclick="showHome()" style="background:#666;">⬅️ عودة</button>
   </div>
 
   <footer>
-    <p>Data powered by Xronos | Map: Esri</p>
+    <p>جميع البيانات من Xronos | الخريطة: Esri</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -167,13 +268,19 @@
     L.control.scale().addTo(map);
 
     let rawData = [], markers = [], suggestions = [];
+    let periods = new Set(), regions = new Set();
+    let filteredSites = [];
 
-    // --- DATA FETCH ---
     async function fetchData() {
       try {
         const res = await fetch('data/output.json');
         rawData = await res.json();
-        suggestions = rawData.map(s => s.site.toLowerCase());
+        // جمع الفترات والجهات المتوفرة للفلترة
+        periods = new Set(rawData.map(s => s.periods).filter(Boolean));
+        regions = new Set(rawData.map(s => s.region || '').filter(Boolean));
+        updateFilters();
+        suggestions = rawData.map(s => [s.site, s.site_ar, s.site_fr].map(ss => ss && ss.toLowerCase()).filter(Boolean)).flat();
+        filteredSites = rawData;
         populateSites(rawData);
         fillListView(rawData);
       } catch (err) {
@@ -181,7 +288,24 @@
       }
     }
 
-    // --- SIDEBAR LIST ---
+    function updateFilters() {
+      const periodSelect = document.getElementById('periodFilter');
+      const regionSelect = document.getElementById('regionFilter');
+      periodSelect.innerHTML = '<option value="">الكل</option>' + Array.from(periods).map(p => `<option value="${p}">${p}</option>`).join('');
+      regionSelect.innerHTML = '<option value="">الكل</option>' + Array.from(regions).map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    function applyFilters() {
+      let period = document.getElementById('periodFilter').value;
+      let region = document.getElementById('regionFilter').value;
+      filteredSites = rawData.filter(s =>
+        (!period || s.periods === period) &&
+        (!region || (s.region || '') === region)
+      );
+      populateSites(filteredSites);
+      fillListView(filteredSites);
+    }
+
     function populateSites(data) {
       const list = document.getElementById('siteList');
       list.innerHTML = '';
@@ -190,17 +314,20 @@
       data.forEach(site => {
         if (!site.lat || !site.lng) return;
         const marker = L.marker([+site.lat, +site.lng]).addTo(map)
-          .bindPopup(`<strong>${site.site}</strong><br/>${site.periods}`);
+          .bindPopup(`<strong>${site.site}</strong><br/>${site.periods}<br/>${site.region || ''}`);
         markers.push(marker);
         const div = document.createElement('div');
         div.className = 'site-card';
-        div.innerHTML = `<strong>${site.site}</strong><br><small>${site.labnr || ''}</small><br><small>${site.periods || ''}</small>`;
+        div.innerHTML = `<strong>${site.site}</strong>
+          <div class="site-info">${site.periods || ''} - ${site.region || ''}</div>`;
         div.onclick = () => showDetail(site);
         list.appendChild(div);
       });
+      if (data.length === 0) {
+        list.innerHTML = '<div class="no-suggestions">لا يوجد مواقع مطابقة لبحثك أو الفلترة.</div>';
+      }
     }
 
-    // --- ALL SITES LIST ---
     function fillListView(data) {
       const list = document.getElementById('allSites');
       list.innerHTML = '';
@@ -211,13 +338,16 @@
         li.onclick = () => showDetail(site);
         list.appendChild(li);
       });
+      if (data.length === 0) {
+        list.innerHTML = '<div class="no-suggestions">لا يوجد مواقع مطابقة.</div>';
+      }
     }
 
-    // --- AUTOCOMPLETE SYSTEM ---
     function setupAutocomplete(inputId, boxId, callback) {
       const input = document.getElementById(inputId);
       const box = document.getElementById(boxId);
       let selectedIndex = -1;
+      let lastFiltered = [];
 
       input.addEventListener('input', () => {
         const value = input.value.toLowerCase();
@@ -227,16 +357,24 @@
           box.style.display = 'none';
           return;
         }
-        const filtered = suggestions.filter(s => s.includes(value)).slice(0, 10);
-        if (filtered.length === 0) {
-          box.style.display = 'none';
+        lastFiltered = suggestions.filter(s => s.includes(value)).slice(0, 10);
+        if (lastFiltered.length === 0) {
+          box.innerHTML = '<div class="no-suggestions">لا يوجد اقتراحات.</div>';
+          box.style.display = 'block';
           return;
         }
         box.style.display = 'block';
-        filtered.forEach((s, i) => {
+        lastFiltered.forEach((s, i) => {
+          // عرض معلومات إضافية إذا وجدت
+          const dataSite = rawData.find(d => [d.site, d.site_ar, d.site_fr].map(ss => ss && ss.toLowerCase()).includes(s));
           const div = document.createElement('div');
           div.textContent = s;
+          if (dataSite) {
+            div.innerHTML = `<strong>${s}</strong>
+              <span style="font-size:0.9em;color:#777;">${dataSite.periods || ''} - ${dataSite.region || ''}</span>`;
+          }
           div.className = i === selectedIndex ? 'active' : '';
+          div.setAttribute('role', 'option');
           div.onclick = () => {
             input.value = s;
             box.innerHTML = '';
@@ -251,7 +389,6 @@
         });
       });
 
-      // إغلاق الاقتراحات عند فقدان التركيز
       input.addEventListener('blur', () => {
         setTimeout(() => {
           box.innerHTML = '';
@@ -259,9 +396,8 @@
         }, 120);
       });
 
-      // دعم لوحة المفاتيح
       input.addEventListener('keydown', (e) => {
-        const items = box.querySelectorAll('div');
+        const items = box.querySelectorAll('div[role="option"]');
         if (!items.length) return;
         if (e.key === 'ArrowDown') {
           selectedIndex = (selectedIndex + 1) % items.length;
@@ -286,22 +422,22 @@
       });
 
       function highlightSuggestions() {
-        const items = box.querySelectorAll('div');
+        const items = box.querySelectorAll('div[role="option"]');
         items.forEach((item, i) => {
           item.className = (i === selectedIndex) ? 'active' : '';
         });
       }
     }
 
-    // --- FILTER ---
     function searchAndFilter(term) {
       term = term.toLowerCase();
-      const filtered = rawData.filter(s => s.site.toLowerCase().includes(term));
+      const filtered = filteredSites.filter(s =>
+        [s.site, s.site_ar, s.site_fr].map(ss => ss && ss.toLowerCase()).some(n => n && n.includes(term))
+      );
       populateSites(filtered);
       fillListView(filtered);
     }
 
-    // --- DETAIL VIEW ---
     function showDetail(site) {
       document.getElementById('home').style.display = 'none';
       document.getElementById('listView').style.display = 'none';
@@ -327,7 +463,6 @@
       }, 100);
     }
 
-    // --- VIEW SWITCH ---
     function showHome() {
       document.getElementById('home').style.display = 'flex';
       document.getElementById('listView').style.display = 'none';
@@ -341,6 +476,38 @@
     }
     function resetMap() {
       map.setView([31.5, -7], 6);
+    }
+
+    function locateMe() {
+      if (!navigator.geolocation) {
+        alert('المتصفح لا يدعم تحديد الموقع.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        map.setView([lat, lng], 12);
+        L.marker([lat, lng]).addTo(map).bindPopup('موقعك الحالي').openPopup();
+      }, () => {
+        alert('تعذّر تحديد موقعك.');
+      });
+    }
+
+    function shareSite() {
+      const siteName = document.getElementById('siteName').textContent;
+      if (navigator.share) {
+        navigator.share({
+          title: siteName,
+          url: window.location.href,
+          text: 'تعرف على هذا الموقع الأثري المغربي!'
+        });
+      } else {
+        prompt('انسخ رابط الموقع وشاركه:', window.location.href);
+      }
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
     }
 
     // --- INITIALIZATION ---
