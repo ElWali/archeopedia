@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.4/awesomplete.min.css"/>
   <style>
+    html, body { height: 100%; margin:0; padding:0; }
     body { margin:0; padding:0; }
     #map { height: 100vh; width: 100%; }
     #search { position:absolute; top:10px; left:50px; z-index:1000; }
@@ -22,12 +23,17 @@
   const map = L.map('map').setView([31.7917, -7.0926], 6);
 
   const layers = {
-    "Wikimedia": L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', { attribution:'© Wikimedia' }),
+    // Wikimedia tiles may not work outside Wikimedia projects
+    // "Wikimedia": L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', { attribution:'© Wikimedia' }),
+    "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    }),
     "Esri Topo": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri' }),
     "Esri Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri' }),
     "Esri Wayback": L.tileLayer('https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri Wayback' })
   };
-  layers.Wikimedia.addTo(map);
+  // Use OpenStreetMap as the default layer
+  layers.OpenStreetMap.addTo(map);
   L.control.layers(layers).addTo(map);
 
   const wdEndpoint = "https://query.wikidata.org/sparql";
@@ -58,9 +64,14 @@
         fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+s.id+'&format=json&origin=*')
           .then(r=>r.json()).then(d=>{
             const ent = d.entities[s.id];
-            const desc = ent.descriptions.en?.value || '';
-            const imgName = ent.claims.P18?.[0].mainsnak.datavalue.value;
+            const desc = ent.descriptions?.en?.value || '';
+            const imgName = ent.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
             let imgHtml = '';
+            const openPopup = () => {
+              const html = '<h3>' + s.label + '</h3><p>' + desc + '</p>' + imgHtml;
+              L.popup().setLatLng([s.lat,s.lon]).setContent(html).openOn(map);
+              map.setView([s.lat,s.lon], 10);
+            };
             if (imgName) {
               fetch('https://commons.wikimedia.org/w/api.php?action=query&titles=File:' + encodeURIComponent(imgName) + '&prop=imageinfo&iiprop=url&format=json&origin=*')
                 .then(r=>r.json()).then(ci=>{
@@ -69,13 +80,9 @@
                   imgHtml = '<img src="'+url+'" style="width:100%;max-width:200px"/>';
                   openPopup();
                 });
+            } else {
+              openPopup();
             }
-            const openPopup = () => {
-              const html = '<h3>' + s.label + '</h3><p>' + desc + '</p>' + imgHtml;
-              L.popup().setLatLng([s.lat,s.lon]).setContent(html).openOn(map);
-              map.setView([s.lat,s.lon], 10);
-            };
-            if (!imgName) openPopup();
         });
       });
 
@@ -83,8 +90,10 @@
       sites.forEach(s => {
         L.marker([s.lat,s.lon]).addTo(map).on('click', () => {
           document.getElementById('search').value = s.label;
-          const e = { text:{ value:s.label } };
-          input.dispatchEvent(new CustomEvent('awesomplete-selectcomplete', { detail:null, bubbles:false, cancelable:false }));
+          // Directly trigger the search handler
+          input.dispatchEvent(new CustomEvent('awesomplete-selectcomplete', {
+            detail: { text: { value: s.label } }
+          }));
         });
       });
     });
