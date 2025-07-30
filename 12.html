@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Morocco Archaeological Sites Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.4/awesomplete.min.css"/>
+  <style>
+    body { margin:0; padding:0; }
+    #map { height: 100vh; width: 100%; }
+    #search { position:absolute; top:10px; left:50px; z-index:1000; }
+  </style>
+</head>
+<body>
+  <input id="search" class="awesomplete" placeholder="Search archaeological site…"/>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.4/awesomplete.min.js"></script>
+  <script>
+  const map = L.map('map').setView([31.7917, -7.0926], 6);
+
+  const layers = {
+    "Wikimedia": L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', { attribution:'© Wikimedia' }),
+    "Esri Topo": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri' }),
+    "Esri Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri' }),
+    "Esri Wayback": L.tileLayer('https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri Wayback' })
+  };
+  layers.Wikimedia.addTo(map);
+  L.control.layers(layers).addTo(map);
+
+  const wdEndpoint = "https://query.wikidata.org/sparql";
+  let sites = [];
+
+  fetch(wdEndpoint + "?query=" + encodeURIComponent(`
+    SELECT ?item ?itemLabel ?coord WHERE {
+      ?item wdt:P31 wd:Q839954;
+            wdt:P17 wd:Q1028;
+            wdt:P625 ?coord.
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+    }
+  `), { headers:{ 'Accept':'application/sparql-results+json' }})
+    .then(r=>r.json())
+    .then(data => {
+      data.results.bindings.forEach(b => {
+        const id = b.item.value.split("/entity/")[1];
+        const label = b.itemLabel.value;
+        const [lon,lat] = b.coord.value.replace('Point(','').replace(')','').split(' ').map(Number);
+        sites.push({ id, label, lat, lon });
+      });
+      const input = document.getElementById('search');
+      new Awesomplete(input, { list: sites.map(s=>s.label) });
+
+      input.addEventListener('awesomplete-selectcomplete', e => {
+        const s = sites.find(s=>s.label === e.text.value);
+        if (!s) return;
+        fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+s.id+'&format=json&origin=*')
+          .then(r=>r.json()).then(d=>{
+            const ent = d.entities[s.id];
+            const desc = ent.descriptions.en?.value || '';
+            const imgName = ent.claims.P18?.[0].mainsnak.datavalue.value;
+            let imgHtml = '';
+            if (imgName) {
+              fetch('https://commons.wikimedia.org/w/api.php?action=query&titles=File:' + encodeURIComponent(imgName) + '&prop=imageinfo&iiprop=url&format=json&origin=*')
+                .then(r=>r.json()).then(ci=>{
+                  const pages = ci.query.pages;
+                  const url = pages[Object.keys(pages)[0]].imageinfo[0].url;
+                  imgHtml = '<img src="'+url+'" style="width:100%;max-width:200px"/>';
+                  openPopup();
+                });
+            }
+            const openPopup = () => {
+              const html = '<h3>' + s.label + '</h3><p>' + desc + '</p>' + imgHtml;
+              L.popup().setLatLng([s.lat,s.lon]).setContent(html).openOn(map);
+              map.setView([s.lat,s.lon], 10);
+            };
+            if (!imgName) openPopup();
+        });
+      });
+
+      // add all markers
+      sites.forEach(s => {
+        L.marker([s.lat,s.lon]).addTo(map).on('click', () => {
+          document.getElementById('search').value = s.label;
+          const e = { text:{ value:s.label } };
+          input.dispatchEvent(new CustomEvent('awesomplete-selectcomplete', { detail:null, bubbles:false, cancelable:false }));
+        });
+      });
+    });
+  </script>
+</body>
+</html>
