@@ -4,27 +4,88 @@
   <meta charset="utf-8">
   <title>Morocco Archaeological Sites Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Modern CSS frameworks: could use Tailwind, Bootstrap, or similar (here just custom minimal for clarity) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.4/awesomplete.min.css"/>
   <style>
-    html, body { height: 100%; margin:0; padding:0; }
-    body { margin:0; padding:0; }
-    #map { height: 100vh; width: 100%; }
-    #search { position:absolute; top:10px; left:50px; z-index:1000; }
+    :root {
+      --primary: #0077b6;
+      --bg: #ffffff;
+      --shadow: 0 2px 8px rgba(0,0,0,0.1);
+      --radius: 0.75em;
+      --font: 'Segoe UI', Arial, sans-serif;
+    }
+    html, body {
+      height: 100%;
+      margin: 0; padding: 0;
+      font-family: var(--font);
+      background: var(--bg);
+    }
+    #map { height: 100vh; width: 100vw; }
+    .search-bar {
+      position: absolute;
+      top: 2vw; left: 50%; transform: translateX(-50%);
+      z-index: 1100;
+      width: 90vw; max-width: 420px;
+      box-shadow: var(--shadow); border-radius: var(--radius);
+      background: #fff;
+      padding: 0.6em 1em;
+      display: flex; align-items: center;
+      gap: 0.5em;
+    }
+    .search-bar label {
+      font-weight: 600;
+      margin-right: .5em;
+      color: var(--primary);
+      font-size: 1.05em;
+    }
+    #search {
+      border: 1px solid #ccc;
+      border-radius: var(--radius);
+      padding: 0.45em 0.8em;
+      width: 100%;
+      font-size: 1em;
+      outline: none;
+      transition: border 0.2s;
+    }
+    #search:focus { border-color: var(--primary); }
+    #loading {
+      margin-left: 1em; color: #888; font-size: 1em;
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .search-bar { top: 1em; width: 98vw; max-width: 98vw; padding: 0.4em 0.8em;}
+      #search { font-size: 1em; }
+    }
+    .leaflet-popup-content img {
+      border-radius: var(--radius);
+      margin-top: 0.5em;
+      max-width: 95%;
+      box-shadow: var(--shadow);
+    }
   </style>
 </head>
 <body>
-  <input id="search" class="awesomplete" placeholder="Search archaeological site…"/>
-  <div id="map"></div>
+  <main>
+    <form class="search-bar" role="search" aria-label="Site Search" onsubmit="return false;">
+      <label for="search">Find a site</label>
+      <input id="search" class="awesomplete" placeholder="Search archaeological site…" autocomplete="off" aria-autocomplete="list"/>
+      <span id="loading" aria-live="polite">Loading…</span>
+    </form>
+    <div id="map" tabindex="0" aria-label="Map of archaeological sites"></div>
+  </main>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.4/awesomplete.min.js"></script>
   <script>
-  const map = L.map('map').setView([31.7917, -7.0926], 6);
+  // Util: Show/hide loading indicator
+  function setLoading(state) {
+    document.getElementById('loading').style.display = state ? 'inline' : 'none';
+  }
+
+  const map = L.map('map', { scrollWheelZoom: true }).setView([31.7917, -7.0926], 6);
 
   const layers = {
-    // Wikimedia tiles may not work outside Wikimedia projects
-    // "Wikimedia": L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', { attribution:'© Wikimedia' }),
     "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     }),
@@ -32,71 +93,112 @@
     "Esri Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri' }),
     "Esri Wayback": L.tileLayer('https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Esri Wayback' })
   };
-  // Use OpenStreetMap as the default layer
   layers.OpenStreetMap.addTo(map);
   L.control.layers(layers).addTo(map);
 
   const wdEndpoint = "https://query.wikidata.org/sparql";
   let sites = [];
+  let markers = [];
 
-  fetch(wdEndpoint + "?query=" + encodeURIComponent(`
-    SELECT ?item ?itemLabel ?coord WHERE {
-      ?item wdt:P31 wd:Q839954;
-            wdt:P17 wd:Q1028;
-            wdt:P625 ?coord.
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
-    }
-  `), { headers:{ 'Accept':'application/sparql-results+json' }})
-    .then(r=>r.json())
-    .then(data => {
-      data.results.bindings.forEach(b => {
+  async function fetchSites() {
+    setLoading(true);
+    try {
+      const res = await fetch(wdEndpoint + "?query=" + encodeURIComponent(`
+        SELECT ?item ?itemLabel ?coord WHERE {
+          ?item wdt:P31 wd:Q839954;
+                wdt:P17 wd:Q1028;
+                wdt:P625 ?coord.
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+        }
+      `), { headers:{ 'Accept':'application/sparql-results+json' }});
+      const data = await res.json();
+      sites = data.results.bindings.map(b => {
         const id = b.item.value.split("/entity/")[1];
         const label = b.itemLabel.value;
         const [lon,lat] = b.coord.value.replace('Point(','').replace(')','').split(' ').map(Number);
-        sites.push({ id, label, lat, lon });
+        return { id, label, lat, lon };
       });
-      const input = document.getElementById('search');
-      new Awesomplete(input, { list: sites.map(s=>s.label) });
+      setLoading(false);
+      return sites;
+    } catch (err) {
+      setLoading(false);
+      alert("Error loading sites. Please try again later.");
+      throw err;
+    }
+  }
 
-      input.addEventListener('awesomplete-selectcomplete', e => {
-        const s = sites.find(s=>s.label === e.text.value);
-        if (!s) return;
-        fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+s.id+'&format=json&origin=*')
-          .then(r=>r.json()).then(d=>{
-            const ent = d.entities[s.id];
-            const desc = ent.descriptions?.en?.value || '';
-            const imgName = ent.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
-            let imgHtml = '';
-            const openPopup = () => {
-              const html = '<h3>' + s.label + '</h3><p>' + desc + '</p>' + imgHtml;
-              L.popup().setLatLng([s.lat,s.lon]).setContent(html).openOn(map);
-              map.setView([s.lat,s.lon], 10);
-            };
-            if (imgName) {
-              fetch('https://commons.wikimedia.org/w/api.php?action=query&titles=File:' + encodeURIComponent(imgName) + '&prop=imageinfo&iiprop=url&format=json&origin=*')
-                .then(r=>r.json()).then(ci=>{
-                  const pages = ci.query.pages;
-                  const url = pages[Object.keys(pages)[0]].imageinfo[0].url;
-                  imgHtml = '<img src="'+url+'" style="width:100%;max-width:200px"/>';
-                  openPopup();
-                });
-            } else {
-              openPopup();
-            }
-        });
-      });
+  async function fetchEntityDetails(id) {
+    const entRes = await fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+id+'&format=json&origin=*');
+    const entData = await entRes.json();
+    const ent = entData.entities[id];
+    const desc = ent.descriptions?.en?.value || '';
+    const imgName = ent.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    let imgHtml = '';
+    if (imgName) {
+      const imgRes = await fetch('https://commons.wikimedia.org/w/api.php?action=query&titles=File:' + encodeURIComponent(imgName) + '&prop=imageinfo&iiprop=url&format=json&origin=*');
+      const ci = await imgRes.json();
+      const pages = ci.query.pages;
+      const url = pages[Object.keys(pages)[0]].imageinfo[0].url;
+      imgHtml = `<img src="${url}" alt="Image of ${id}" style="max-width:220px;"/>`;
+    }
+    return { desc, imgHtml };
+  }
 
-      // add all markers
-      sites.forEach(s => {
-        L.marker([s.lat,s.lon]).addTo(map).on('click', () => {
-          document.getElementById('search').value = s.label;
-          // Directly trigger the search handler
-          input.dispatchEvent(new CustomEvent('awesomplete-selectcomplete', {
-            detail: { text: { value: s.label } }
-          }));
-        });
+  function clearMarkers() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+  }
+
+  function addMarkers() {
+    clearMarkers();
+    sites.forEach(s => {
+      const marker = L.marker([s.lat,s.lon], { keyboard: true, title: s.label });
+      marker.addTo(map).on('click keypress', async (e) => {
+        if (e.type === 'keypress' && e.originalEvent.key !== 'Enter') return;
+        openSitePopup(s);
       });
+      markers.push(marker);
     });
+  }
+
+  async function openSitePopup(site) {
+    setLoading(true);
+    try {
+      const { desc, imgHtml } = await fetchEntityDetails(site.id);
+      const html = `<h3>${site.label}</h3><p>${desc}</p>${imgHtml}`;
+      L.popup({ maxWidth: 250 }).setLatLng([site.lat,site.lon]).setContent(html).openOn(map);
+      map.setView([site.lat,site.lon], 10);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Initialize
+  (async function init() {
+    await fetchSites();
+    const input = document.getElementById('search');
+    new Awesomplete(input, {
+      list: sites.map(s=>s.label),
+      minChars: 1,
+      maxItems: 8,
+    });
+
+    input.addEventListener('awesomplete-selectcomplete', e => {
+      const val = e.text?.value || input.value;
+      const s = sites.find(s=>s.label === val);
+      if (s) openSitePopup(s);
+    });
+
+    // Keyboard shortcut: on Enter, if suggestion selected, open, else do nothing
+    input.addEventListener('keydown', function(e) {
+      if (e.key === "Enter") {
+        const s = sites.find(s=>s.label === input.value);
+        if (s) openSitePopup(s);
+      }
+    });
+
+    addMarkers();
+  })();
   </script>
 </body>
 </html>
