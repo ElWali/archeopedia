@@ -3,162 +3,247 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>بيانات أول 10 كتل بيتكوين - معاملات + فرز + فلترة + تحسين موبايل</title>
+<title>بيانات أول 10 كتل بيتكوين - تحسين الأداء وتصميم Google Style</title>
 <style>
-  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fa; padding: 20px; color: #222; }
-  h1 { text-align: center; margin-bottom: 1rem; }
-  button#refreshBtn {
-    background-color: #007bff; border: none; color: white; padding: 10px 18px;
-    font-size: 16px; border-radius: 5px; cursor: pointer; margin-bottom: 1rem;
-    display: block; margin-left: auto; margin-right: auto;
+  /* Material Design inspired styles */
+  body {
+    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    background: #f5f5f5;
+    color: #202124;
+    margin: 0; padding: 20px;
   }
-  button#refreshBtn:hover { background-color: #0056b3; }
+  h1 {
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  #refreshBtn {
+    background-color: #1a73e8;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 10px auto 15px auto;
+    display: block;
+    box-shadow: 0 2px 4px rgba(26,115,232,0.4);
+    transition: background-color 0.3s ease;
+  }
+  #refreshBtn:hover {
+    background-color: #155ab6;
+  }
+  #searchInput {
+    display: block;
+    margin: 0 auto 15px auto;
+    width: 320px;
+    max-width: 90%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
   .loading {
-    font-style: italic; color: #666; font-size: 13px; text-align: center;
+    text-align: center;
+    font-style: italic;
+    color: #5f6368;
+    font-size: 13px;
   }
   .table-container {
-    overflow-x: auto;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-    border-radius: 6px;
     background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgb(60 64 67 / 0.3), 0 4px 8px rgb(60 64 67 / 0.15);
+    overflow-x: auto;
   }
   table {
-    border-collapse: collapse; width: 100%; min-width: 1100px;
-    font-size: 14px;
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1200px;
+    font-size: 13px;
   }
   th, td {
-    border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle;
+    padding: 12px 10px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  thead tr {
+    background: #f1f3f4;
   }
   th {
-    background-color: #007bff; color: white; position: sticky; top: 0; z-index: 10;
+    font-weight: 600;
     cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
   }
-  tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+  tbody tr:hover {
+    background-color: #e8f0fe;
+  }
   code {
-    font-family: monospace; font-size: 12px; user-select: text;
+    font-family: "Roboto Mono", monospace;
+    font-size: 11px;
+    user-select: text;
   }
   a.copy-btn {
-    display: inline-block; margin-left: 5px; font-size: 12px; color: #0056b3; cursor: pointer;
+    margin-left: 6px;
+    font-size: 11px;
+    color: #1a73e8;
+    cursor: pointer;
+    text-decoration: none;
+    user-select: none;
+  }
+  a.copy-btn:hover {
     text-decoration: underline;
   }
-  a.copy-btn:hover { color: #003d7a; }
-  /* Tooltip */
-  [data-tooltip] {
-    position: relative; cursor: help;
+  a.external-link {
+    margin-left: 6px;
+    font-size: 14px;
+    color: #1a73e8;
+    text-decoration: none;
   }
-  [data-tooltip]:hover::after {
-    content: attr(data-tooltip);
-    position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
-    background: #333; color: white; padding: 4px 8px; border-radius: 4px;
-    white-space: nowrap; font-size: 12px; z-index: 1000;
+  a.external-link:hover {
+    text-decoration: underline;
   }
   /* Collapsible icon */
   .collapsible {
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 600;
+    color: #1a73e8;
     user-select: none;
     font-size: 16px;
-    color: #007bff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .collapsible::before {
-    content: "▶ ";
+    content: "▶";
     display: inline-block;
-    transition: transform 0.2s ease;
+    margin-left: 5px;
+    transition: transform 0.3s ease;
   }
   .collapsible.active::before {
     transform: rotate(90deg);
   }
-  /* Detail row hidden by default */
+  /* Detail row hidden initially */
   tr.details-row {
     display: none;
-    background: #e8f0fe;
+    background: #f9fbff;
   }
   tr.details-row td {
-    padding: 10px;
+    padding: 16px;
     text-align: right;
     font-size: 13px;
   }
-  /* Nested transactions table */
+  /* Transactions nested table */
   table.transactions {
     width: 100%;
     border-collapse: collapse;
   }
   table.transactions th, table.transactions td {
-    border: 1px solid #bbb;
-    padding: 6px;
+    border: 1px solid #dfe1e5;
+    padding: 8px 6px;
     font-size: 12px;
     text-align: center;
     background: white;
   }
   table.transactions th {
-    background: #cce0ff;
-    color: #003366;
+    background: #e8f0fe;
+    color: #1967d2;
     position: sticky;
     top: 0;
-    z-index: 5;
+    z-index: 3;
+  }
+  /* Addresses list inside cell */
+  .addr-list {
+    max-height: 80px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 11px;
+    padding-right: 6px;
+  }
+  .addr-list code {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  /* Spinner style */
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #1a73e8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
   /* Responsive tweaks */
   @media (max-width: 900px) {
-    table { font-size: 12px; }
+    table { font-size: 12px; min-width: 900px; }
   }
   @media (max-width: 600px) {
-    table { font-size: 10px; min-width: 900px; }
-  }
-  /* Search input */
-  #searchInput {
-    display: block;
-    margin: 0 auto 10px auto;
-    width: 300px;
-    padding: 6px 10px;
-    font-size: 14px;
-    border-radius: 4px;
-    border: 1px solid #aaa;
+    table { font-size: 11px; min-width: 700px; }
+    th, td { padding: 8px 5px; }
+    #searchInput {
+      width: 90%;
+    }
   }
 </style>
 </head>
 <body>
-<h1>بيانات أول 10 كتل بيتكوين - معاملات + فرز + فلترة + تحسين موبايل</h1>
-<input type="search" id="searchInput" placeholder="ابحث هنا ..." aria-label="بحث في الجدول" />
+<h1>بيانات أول 10 كتل بيتكوين</h1>
+<input type="search" id="searchInput" placeholder="ابحث في الكتل ..." aria-label="بحث في الكتل" />
 <button id="refreshBtn" title="إعادة تحميل البيانات">🔄 تحديث البيانات</button>
 <div class="loading" id="globalLoading">جاري تحميل البيانات ...</div>
 <div class="table-container" id="tableContainer" style="display:none;">
-  <table id="blockTable">
+  <table id="blockTable" aria-label="جدول بيانات الكتل">
     <thead>
       <tr>
-        <th data-sort="string" data-tooltip="فتح/إغلاق تفاصيل المعاملات"></th>
-        <th data-sort="int" data-tooltip="رقم الكتلة">الارتفاع</th>
-        <th data-sort="string" data-tooltip="هاش الكتلة (رابط مباشر)">هاش الكتلة</th>
-        <th data-sort="string" data-tooltip="هاش الكتلة السابقة">الكتلة السابقة</th>
-        <th data-sort="string" data-tooltip="تاريخ ووقت الكتلة (UTC)">التوقيت (UTC)</th>
-        <th data-sort="int" data-tooltip="الفرق الزمني مع الكتلة السابقة بالثواني">فارق الوقت (ثانية)</th>
-        <th data-sort="int" data-tooltip="عدد المعاملات في الكتلة">عدد المعاملات</th>
-        <th data-sort="int" data-tooltip="حجم الكتلة بالبايت">الحجم (بايت)</th>
-        <th data-sort="int" data-tooltip="وزن الكتلة">الوزن</th>
-        <th data-sort="int" data-tooltip="مستوى الصعوبة عند الكتلة">الصعوبة</th>
-        <th data-sort="float" data-tooltip="مكافأة تعدين الكتلة (بيتكوين)">مكافأة الكتلة (BTC)</th>
-        <th data-sort="string" data-tooltip="إجمالي الرسوم في الكتلة (بيتكوين)">الرسوم الكلية (BTC)</th>
-        <th data-sort="int" data-tooltip="العدد المؤكد للكتلة">التأكيدات</th>
-        <th data-sort="int" data-tooltip="Nonce المستخدم في إثبات العمل">Nonce</th>
-        <th data-sort="string" data-tooltip="Bits (الصعوبة المشفرة)">Bits</th>
-        <th data-sort="string" data-tooltip="جذر ميركل للكتلة">Merkle Root</th>
+        <th></th>
+        <th data-sort="int">الارتفاع</th>
+        <th data-sort="string">هاش الكتلة</th>
+        <th data-sort="string">الكتلة السابقة</th>
+        <th data-sort="string">التوقيت (UTC)</th>
+        <th data-sort="int">فارق الوقت (ثانية)</th>
+        <th data-sort="int">عدد المعاملات</th>
+        <th data-sort="int">الحجم (بايت)</th>
+        <th data-sort="int">الوزن</th>
+        <th data-sort="int">الصعوبة</th>
+        <th data-sort="float">مكافأة الكتلة (BTC)</th>
+        <th>الرسوم الكلية (BTC)</th>
+        <th data-sort="int">التأكيدات</th>
+        <th data-sort="int">Nonce</th>
+        <th>Bits</th>
+        <th>Merkle Root</th>
       </tr>
     </thead>
-    <tbody class="list" id="tableBody"></tbody>
+    <tbody id="tableBody" class="list"></tbody>
   </table>
 </div>
 
-<!-- مكتبة List.js للبحث والفرز -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
 
 <script>
-  // لتحويل التوقيت إلى UTC مقروء
+  const tbody = document.getElementById('tableBody');
+  const loading = document.getElementById('globalLoading');
+  const tableContainer = document.getElementById('tableContainer');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const searchInput = document.getElementById('searchInput');
+
   function unixToUTC(ts) {
     if (!ts) return 'N/A';
     const d = new Date(ts * 1000);
     return d.toISOString().replace('T', ' ').replace(/\..+/, '');
   }
 
-  // لجلب ارتفاع آخر كتلة لتحديد التأكيدات
   async function fetchBestHeight() {
     try {
       const res = await fetch('https://blockstream.info/api/blocks/tip/height');
@@ -170,29 +255,30 @@
     }
   }
 
-  // لجلب هاش كتلة بحسب الارتفاع
   async function fetchBlockHash(height) {
     const res = await fetch(`https://blockstream.info/api/block-height/${height}`);
     if (!res.ok) throw new Error(`فشل في جلب هاش الكتلة للارتفاع ${height}`);
-    const txt = await res.text();
-    return txt.trim();
+    return (await res.text()).trim();
   }
 
-  // لجلب بيانات الكتلة بحسب هاش
   async function fetchBlockData(hash) {
     const res = await fetch(`https://blockstream.info/api/block/${hash}`);
     if (!res.ok) throw new Error(`فشل في جلب بيانات الكتلة بالهاش ${hash}`);
     return res.json();
   }
 
-  // لجلب معاملات الكتلة (صفحة واحدة كافية للكتل الأولى)
   async function fetchBlockTxs(hash) {
     const res = await fetch(`https://blockstream.info/api/block/${hash}/txs`);
     if (!res.ok) throw new Error(`فشل في جلب معاملات الكتلة ${hash}`);
     return res.json();
   }
 
-  // لحساب مكافأة الكتلة حسب الارتفاع (نصف المكافأة كل 210000 كتلة)
+  async function fetchTxDetails(txid) {
+    const res = await fetch(`https://blockstream.info/api/tx/${txid}`);
+    if (!res.ok) throw new Error(`فشل في جلب تفاصيل المعاملة ${txid}`);
+    return res.json();
+  }
+
   function getBlockReward(height) {
     const initialReward = 50;
     const halvings = Math.floor(height / 210000);
@@ -209,7 +295,6 @@
     });
   }
 
-  // إضافة زر نسخ إلى خلية
   function addCopyButton(cell, text) {
     const btn = document.createElement('a');
     btn.textContent = 'نسخ';
@@ -223,61 +308,140 @@
     cell.appendChild(btn);
   }
 
-  // إنشاء صف تفاصيل المعاملات (مخبأة في البداية)
-  function createTxsDetailsRow(colspan, txs, blockHeight) {
+  function createSpinner() {
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner';
+    spinner.title = 'جاري التحميل...';
+    return spinner;
+  }
+
+  // إنشاء صف تفاصيل المعاملات مع تحميل بيانات المعاملات عند الفتح (Lazy Loading)
+  function createTxsDetailsRow(colspan, blockHash, txCount) {
     const tr = document.createElement('tr');
     tr.className = 'details-row';
     const td = document.createElement('td');
     td.colSpan = colspan;
 
-    // بناء جدول المعاملات
-    const txTable = document.createElement('table');
-    txTable.className = 'transactions';
-    const thead = document.createElement('thead');
-    thead.innerHTML = `
-      <tr>
-        <th>معرف المعاملة</th>
-        <th>عدد المدخلات</th>
-        <th>عدد المخرجات</th>
-        <th>حجم المعاملة (بايت)</th>
-        <th>الرسوم (ساتوشي)</th>
-      </tr>
-    `;
-    txTable.appendChild(thead);
+    // محتوى مبدئي للتحميل
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'اضغط على السهم لتحميل تفاصيل المعاملات...';
+    loadingText.style.fontStyle = 'italic';
+    loadingText.style.color = '#666';
+    loadingText.style.textAlign = 'center';
+    loadingText.style.padding = '15px 0';
 
-    const tbody = document.createElement('tbody');
-
-    txs.forEach(tx => {
-      const fee = tx.fee ?? 'N/A';
-      const trTx = document.createElement('tr');
-
-      const txidCell = document.createElement('td');
-      txidCell.innerHTML = `<code>${tx.txid}</code> <a href="https://blockstream.info/tx/${tx.txid}" target="_blank" rel="noopener noreferrer" title="عرض المعاملة">🔗</a>`;
-      addCopyButton(txidCell, tx.txid);
-
-      trTx.appendChild(txidCell);
-      trTx.appendChild(document.createElement('td')).textContent = tx.vin.length;
-      trTx.appendChild(document.createElement('td')).textContent = tx.vout.length;
-      trTx.appendChild(document.createElement('td')).textContent = tx.size;
-      trTx.appendChild(document.createElement('td')).textContent = fee;
-
-      tbody.appendChild(trTx);
-    });
-
-    txTable.appendChild(tbody);
-    td.appendChild(txTable);
+    td.appendChild(loadingText);
     tr.appendChild(td);
+
+    tr.dataset.blockHash = blockHash;
+    tr.dataset.loaded = 'false';
+    tr.dataset.txCount = txCount;
+
     return tr;
   }
 
-  // التبديل بين إظهار/إخفاء تفاصيل المعاملات
+  async function loadTxDetailsForRow(detailRow) {
+    if (detailRow.dataset.loaded === 'true') return; // تجنب التحميل المتكرر
+
+    const blockHash = detailRow.dataset.blockHash;
+    const txCount = +detailRow.dataset.txCount;
+    const td = detailRow.querySelector('td');
+    td.innerHTML = ''; // تفريغ المحتوى
+
+    // عرض مؤشر التحميل
+    const spinner = createSpinner();
+    td.appendChild(spinner);
+
+    try {
+      // جلب معاملات الكتلة (يمكن جلب دفعات إذا كانت كبيرة)
+      const txs = await fetchBlockTxs(blockHash);
+
+      // جلب تفاصيل كل معاملة بشكل متسلسل (لتخفيف الضغط)
+      const detailedTxs = [];
+      for (let i = 0; i < txs.length; i++) {
+        const tx = txs[i];
+        try {
+          const txDetails = await fetchTxDetails(tx.txid);
+          detailedTxs.push(txDetails);
+        } catch {
+          detailedTxs.push(tx);
+        }
+      }
+
+      // بناء جدول المعاملات
+      const txTable = document.createElement('table');
+      txTable.className = 'transactions';
+
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr>
+          <th>معرف المعاملة</th>
+          <th>عدد المدخلات</th>
+          <th>عدد المخرجات</th>
+          <th>حجم المعاملة (بايت)</th>
+          <th>الرسوم (ساتوشي)</th>
+          <th>عناوين المخرجات</th>
+        </tr>
+      `;
+      txTable.appendChild(thead);
+
+      const tbodyTx = document.createElement('tbody');
+
+      detailedTxs.forEach(tx => {
+        const fee = tx.fee ?? 'N/A';
+        const trTx = document.createElement('tr');
+
+        const txidCell = document.createElement('td');
+        txidCell.innerHTML = `<code>${tx.txid}</code> <a href="https://blockstream.info/tx/${tx.txid}" target="_blank" rel="noopener noreferrer" class="external-link" title="عرض المعاملة">🔗</a>`;
+        addCopyButton(txidCell, tx.txid);
+
+        trTx.appendChild(txidCell);
+        trTx.appendChild(document.createElement('td')).textContent = tx.vin.length;
+        trTx.appendChild(document.createElement('td')).textContent = tx.vout.length;
+        trTx.appendChild(document.createElement('td')).textContent = tx.size;
+        trTx.appendChild(document.createElement('td')).textContent = fee;
+
+        const outAddrsCell = document.createElement('td');
+        const addrSet = new Set();
+        tx.vout.forEach(vout => {
+          if(vout.scriptpubkey_address) addrSet.add(vout.scriptpubkey_address);
+        });
+
+        if(addrSet.size === 0) {
+          outAddrsCell.textContent = 'غير متوفر';
+        } else {
+          const addrListDiv = document.createElement('div');
+          addrListDiv.className = 'addr-list';
+          addrSet.forEach(addr => {
+            const c = document.createElement('code');
+            c.textContent = addr;
+            addrListDiv.appendChild(c);
+          });
+          outAddrsCell.appendChild(addrListDiv);
+        }
+        trTx.appendChild(outAddrsCell);
+
+        tbodyTx.appendChild(trTx);
+      });
+
+      txTable.appendChild(tbodyTx);
+      td.innerHTML = ''; // تفريغ ثم إضافة الجدول
+      td.appendChild(txTable);
+
+      detailRow.dataset.loaded = 'true';
+
+    } catch (e) {
+      td.innerHTML = `<div style="color:red; text-align:center;">فشل تحميل بيانات المعاملات</div>`;
+      detailRow.dataset.loaded = 'false';
+    }
+  }
+
+  // فتح / إغلاق تفاصيل المعاملات مع التحميل عند الطلب
   function toggleDetails(event) {
     const btn = event.target;
     if (!btn.classList.contains('collapsible')) return;
-
     const tr = btn.closest('tr');
     const nextTr = tr.nextElementSibling;
-
     if (!nextTr || !nextTr.classList.contains('details-row')) return;
 
     const isVisible = nextTr.style.display === 'table-row';
@@ -287,129 +451,115 @@
     } else {
       nextTr.style.display = 'table-row';
       btn.classList.add('active');
+      loadTxDetailsForRow(nextTr);
     }
   }
 
+  // تحميل بيانات أول 10 كتل (بيانات أساسية فقط)
   async function loadBlocks() {
-    const tbody = document.getElementById('tableBody');
-    const loading = document.getElementById('globalLoading');
-    const tableContainer = document.getElementById('tableContainer');
-
     tbody.innerHTML = '';
     loading.style.display = 'block';
     tableContainer.style.display = 'none';
 
-    const bestHeight = await fetchBestHeight();
-
-    // جلب هاشات الكتل بالتوازي
-    let hashes = [];
     try {
-      hashes = await Promise.all([...Array(10).keys()].map(h => fetchBlockHash(h)));
-    } catch (err) {
-      loading.textContent = 'فشل في جلب بعض هاشات الكتل: ' + err.message;
-      return;
-    }
+      const bestHeight = await fetchBestHeight();
+      const heights = [...Array(10).keys()];
+      const hashes = await Promise.all(heights.map(h => fetchBlockHash(h)));
+      const blocksData = await Promise.all(hashes.map(h => fetchBlockData(h)));
 
-    // جلب بيانات الكتل بالتوازي
-    const blocksData = await Promise.all(hashes.map(hash => fetchBlockData(hash)));
-
-    // جلب معاملات كل كتلة بالتوازي (للـ10 كتل)
-    const allTxs = await Promise.all(hashes.map(hash => fetchBlockTxs(hash)));
-
-    for (let i = 0; i < 10; i++) {
-      const b = blocksData[i];
-      const txs = allTxs[i];
-      const height = i;
-      const reward = getBlockReward(height);
-      const confirmations = bestHeight !== null ? bestHeight - height + 1 : 'N/A';
-      let timeDelta = 'N/A';
-      if (i > 0) {
-        const prevTimestamp = blocksData[i - 1].timestamp;
-        if (prevTimestamp && b.timestamp) {
-          timeDelta = b.timestamp - prevTimestamp;
+      for (let i = 0; i < 10; i++) {
+        const b = blocksData[i];
+        const height = i;
+        const reward = getBlockReward(height);
+        const confirmations = bestHeight !== null ? bestHeight - height + 1 : 'N/A';
+        let timeDelta = 'N/A';
+        if (i > 0) {
+          const prevTimestamp = blocksData[i - 1].timestamp;
+          if (prevTimestamp && b.timestamp) {
+            timeDelta = b.timestamp - prevTimestamp;
+          }
         }
+
+        const tr = document.createElement('tr');
+
+        const toggleCell = document.createElement('td');
+        toggleCell.className = 'collapsible';
+        toggleCell.title = 'فتح/إغلاق تفاصيل المعاملات';
+        tr.appendChild(toggleCell);
+
+        tr.innerHTML += `
+          <td>${height}</td>
+          <td><code>${b.id}</code></td>
+          <td><code>${b.previousblockhash || 'N/A'}</code></td>
+          <td>${unixToUTC(b.timestamp)}</td>
+          <td>${timeDelta}</td>
+          <td>${b.tx_count}</td>
+          <td>${b.size}</td>
+          <td>${b.weight}</td>
+          <td>${b.difficulty.toLocaleString()}</td>
+          <td>${reward}</td>
+          <td>تحميل عند الفتح</td>
+          <td>${confirmations}</td>
+          <td>${b.nonce}</td>
+          <td>${b.bits}</td>
+          <td><code>${b.merkleroot}</code></td>
+        `;
+
+        // أزرار نسخ
+        addCopyButton(tr.children[2], b.id);
+        if (b.previousblockhash) addCopyButton(tr.children[3], b.previousblockhash);
+
+        // رابط عرض الكتلة
+        const hashCell = tr.children[2];
+        const link = document.createElement('a');
+        link.href = `https://blockstream.info/block/${b.id}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '🔗';
+        link.className = 'external-link';
+        hashCell.appendChild(link);
+
+        tbody.appendChild(tr);
+
+        // صف تفاصيل المعاملات مبدئياً (سيتم تحميل التفاصيل عند الفتح)
+        const detailRow = createTxsDetailsRow(tr.children.length, b.id, b.tx_count);
+        tbody.appendChild(detailRow);
       }
 
-      // صف الكتلة الرئيسي
-      const tr = document.createElement('tr');
+      loading.style.display = 'none';
+      tableContainer.style.display = 'block';
 
-      // خلية أيقونة الفتح/الإغلاق
-      const toggleCell = document.createElement('td');
-      toggleCell.className = 'collapsible';
-      toggleCell.title = 'فتح/إغلاق معاملات الكتلة';
-      toggleCell.textContent = '▶';
-      tr.appendChild(toggleCell);
-
-      tr.innerHTML += `
-        <td class="height">${height}</td>
-        <td class="blockhash"><code>${b.id}</code></td>
-        <td class="prevhash"><code>${b.previousblockhash || 'N/A'}</code></td>
-        <td class="time">${unixToUTC(b.timestamp)}</td>
-        <td class="timedelta">${timeDelta}</td>
-        <td class="txcount">${b.tx_count}</td>
-        <td class="size">${b.size}</td>
-        <td class="weight">${b.weight}</td>
-        <td class="difficulty">${b.difficulty.toLocaleString()}</td>
-        <td class="reward">${reward}</td>
-        <td class="fees">غير متوفر</td>
-        <td class="confirmations">${confirmations}</td>
-        <td class="nonce">${b.nonce}</td>
-        <td class="bits">${b.bits}</td>
-        <td class="merkleroot"><code>${b.merkleroot}</code></td>
-      `;
-
-      // أزرار النسخ للهاشات والروابط
-      addCopyButton(tr.children[2], b.id);
-      if (b.previousblockhash) addCopyButton(tr.children[3], b.previousblockhash);
-      const hashCell = tr.children[2];
-      const link = document.createElement('a');
-      link.href = `https://blockstream.info/block/${b.id}`;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = '🔗';
-      link.style.marginRight = '5px';
-      link.title = 'عرض الكتلة في Blockstream Explorer';
-      hashCell.appendChild(link);
-
-      tbody.appendChild(tr);
-
-      // صف تفاصيل المعاملات (مخبأ)
-      const detailRow = createTxsDetailsRow(tr.children.length, txs, height);
-      tbody.appendChild(detailRow);
-    }
-
-    loading.style.display = 'none';
-    tableContainer.style.display = 'block';
-
-    // تفعيل التبديل عند الضغط على الخلية الأولى
-    tbody.querySelectorAll('.collapsible').forEach(el => {
-      el.addEventListener('click', toggleDetails);
-    });
-
-    // تهيئة مكتبة List.js للبحث والفرز
-    if (window.listObj) {
-      window.listObj.clear();
-      window.listObj.add(tbody.querySelectorAll('tr:not(.details-row)'));
-    } else {
-      window.listObj = new List('tableContainer', {
-        valueNames: [
-          'height', 'blockhash', 'prevhash', 'time', 'timedelta', 'txcount',
-          'size', 'weight', 'difficulty', 'reward', 'fees', 'confirmations', 'nonce', 'bits', 'merkleroot'
-        ],
-        listClass: 'list',
-        searchClass: 'search',
-        sortClass: 'sort',
-        plugins: [ List.plugins.get('fuzzySearch') ]
+      tbody.querySelectorAll('.collapsible').forEach(el => {
+        el.addEventListener('click', toggleDetails);
       });
+
+      // تهيئة List.js للبحث والفرز
+      if(window.listObj) {
+        window.listObj.clear();
+        window.listObj.add(tbody.querySelectorAll('tr:not(.details-row)'));
+      } else {
+        window.listObj = new List('tableContainer', {
+          valueNames: [
+            'height', 'blockhash', 'prevhash', 'time', 'timedelta', 'txcount',
+            'size', 'weight', 'difficulty', 'reward', 'fees', 'confirmations', 'nonce', 'bits', 'merkleroot'
+          ],
+          listClass: 'list',
+          searchClass: 'search',
+          sortClass: 'sort',
+          plugins: [ List.plugins.get('fuzzySearch') ]
+        });
+      }
+    } catch (err) {
+      loading.textContent = `حدث خطأ أثناء تحميل البيانات: ${err.message}`;
     }
   }
 
-  // ربط زر التحديث
-  document.getElementById('refreshBtn').addEventListener('click', () => {
-    loadBlocks();
+  refreshBtn.addEventListener('click', () => loadBlocks());
+
+  searchInput.addEventListener('input', e => {
+    if(window.listObj) window.listObj.search(e.target.value);
   });
 
-  // تحميل أولي عند فتح الصفحة
   loadBlocks();
 </script>
 </body>
