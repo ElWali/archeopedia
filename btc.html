@@ -1,206 +1,416 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bitcoin First 100 Blocks Interactive Map</title>
-  <script src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
-  <link href="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.css" rel="stylesheet" />
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: #101014;
-      color: #f5f5f7;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    h1 {
-      color: #f7931a;
-      text-align: center;
-      margin: 2rem 0 1rem 0;
-      font-size: 2.8rem;
-      text-shadow: 0 1px 8px #0006;
-      letter-spacing: 2px;
-      font-weight: 800;
-    }
-    #network {
-      flex: 1 1 auto;
-      width: 100vw;
-      max-width: 100vw;
-      height: 85vh;
-      border-top: 2px solid #f7931a;
-      background: #18181c;
-      box-shadow: 0 4px 24px #000a;
-      border-radius: 12px 12px 0 0;
-      margin: 0 auto;
-    }
-    @media (max-width: 900px) {
-      h1 { font-size: 1.2rem; margin: 1rem 0 0.5rem 0; }
-      #network { height: 72vh; }
-    }
-    .vis-tooltip {
-      background: #232323 !important;
-      color: #fafafa !important;
-      border-radius: 8px !important;
-      border: 1px solid #f7931a !important;
-      font-size: 1rem !important;
-      padding: 0.7em 1em !important;
-      max-width: 340px;
-      word-break: break-all;
-      z-index: 1000;
-    }
-    a,a:visited { color: #f7931a; text-decoration: underline dotted; }
-    a:hover { color: #ffbb58; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>بيانات أول 10 كتل بيتكوين - معاملات + فرز + فلترة + تحسين موبايل</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fa; padding: 20px; color: #222; }
+  h1 { text-align: center; margin-bottom: 1rem; }
+  button#refreshBtn {
+    background-color: #007bff; border: none; color: white; padding: 10px 18px;
+    font-size: 16px; border-radius: 5px; cursor: pointer; margin-bottom: 1rem;
+    display: block; margin-left: auto; margin-right: auto;
+  }
+  button#refreshBtn:hover { background-color: #0056b3; }
+  .loading {
+    font-style: italic; color: #666; font-size: 13px; text-align: center;
+  }
+  .table-container {
+    overflow-x: auto;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    border-radius: 6px;
+    background: white;
+  }
+  table {
+    border-collapse: collapse; width: 100%; min-width: 1100px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle;
+  }
+  th {
+    background-color: #007bff; color: white; position: sticky; top: 0; z-index: 10;
+    cursor: pointer;
+  }
+  tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+  code {
+    font-family: monospace; font-size: 12px; user-select: text;
+  }
+  a.copy-btn {
+    display: inline-block; margin-left: 5px; font-size: 12px; color: #0056b3; cursor: pointer;
+    text-decoration: underline;
+  }
+  a.copy-btn:hover { color: #003d7a; }
+  /* Tooltip */
+  [data-tooltip] {
+    position: relative; cursor: help;
+  }
+  [data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+    background: #333; color: white; padding: 4px 8px; border-radius: 4px;
+    white-space: nowrap; font-size: 12px; z-index: 1000;
+  }
+  /* Collapsible icon */
+  .collapsible {
+    cursor: pointer;
+    font-weight: bold;
+    user-select: none;
+    font-size: 16px;
+    color: #007bff;
+  }
+  .collapsible::before {
+    content: "▶ ";
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  .collapsible.active::before {
+    transform: rotate(90deg);
+  }
+  /* Detail row hidden by default */
+  tr.details-row {
+    display: none;
+    background: #e8f0fe;
+  }
+  tr.details-row td {
+    padding: 10px;
+    text-align: right;
+    font-size: 13px;
+  }
+  /* Nested transactions table */
+  table.transactions {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.transactions th, table.transactions td {
+    border: 1px solid #bbb;
+    padding: 6px;
+    font-size: 12px;
+    text-align: center;
+    background: white;
+  }
+  table.transactions th {
+    background: #cce0ff;
+    color: #003366;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  /* Responsive tweaks */
+  @media (max-width: 900px) {
+    table { font-size: 12px; }
+  }
+  @media (max-width: 600px) {
+    table { font-size: 10px; min-width: 900px; }
+  }
+  /* Search input */
+  #searchInput {
+    display: block;
+    margin: 0 auto 10px auto;
+    width: 300px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+  }
+</style>
 </head>
 <body>
-  <h1>Bitcoin First 100 Blocks Interactive Map</h1>
-  <div id="network" tabindex="0" aria-label="Bitcoin Genesis to Block 99 Visualization"></div>
-  <script>
-    /**
-     * You can update this array with more accurate/complete info per block:
-     * - number, hash, timestamp, txCount, reward, output address, explorer links, etc.
-     * For a demo, only some data is filled. In production, fill from a Bitcoin explorer API or dataset.
-     */
-    const blockData = [
-      {
-        number: 0,
-        hash: '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
-        time: '2009-01-03 18:15:05',
-        txCount: 1,
-        reward: 50,
-        address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        txid: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
-        note: 'Genesis Block: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"',
-      },
-      // Block 1-99: Replace with actual data for each block.
-    ];
+<h1>بيانات أول 10 كتل بيتكوين - معاملات + فرز + فلترة + تحسين موبايل</h1>
+<input type="search" id="searchInput" placeholder="ابحث هنا ..." aria-label="بحث في الجدول" />
+<button id="refreshBtn" title="إعادة تحميل البيانات">🔄 تحديث البيانات</button>
+<div class="loading" id="globalLoading">جاري تحميل البيانات ...</div>
+<div class="table-container" id="tableContainer" style="display:none;">
+  <table id="blockTable">
+    <thead>
+      <tr>
+        <th data-sort="string" data-tooltip="فتح/إغلاق تفاصيل المعاملات"></th>
+        <th data-sort="int" data-tooltip="رقم الكتلة">الارتفاع</th>
+        <th data-sort="string" data-tooltip="هاش الكتلة (رابط مباشر)">هاش الكتلة</th>
+        <th data-sort="string" data-tooltip="هاش الكتلة السابقة">الكتلة السابقة</th>
+        <th data-sort="string" data-tooltip="تاريخ ووقت الكتلة (UTC)">التوقيت (UTC)</th>
+        <th data-sort="int" data-tooltip="الفرق الزمني مع الكتلة السابقة بالثواني">فارق الوقت (ثانية)</th>
+        <th data-sort="int" data-tooltip="عدد المعاملات في الكتلة">عدد المعاملات</th>
+        <th data-sort="int" data-tooltip="حجم الكتلة بالبايت">الحجم (بايت)</th>
+        <th data-sort="int" data-tooltip="وزن الكتلة">الوزن</th>
+        <th data-sort="int" data-tooltip="مستوى الصعوبة عند الكتلة">الصعوبة</th>
+        <th data-sort="float" data-tooltip="مكافأة تعدين الكتلة (بيتكوين)">مكافأة الكتلة (BTC)</th>
+        <th data-sort="string" data-tooltip="إجمالي الرسوم في الكتلة (بيتكوين)">الرسوم الكلية (BTC)</th>
+        <th data-sort="int" data-tooltip="العدد المؤكد للكتلة">التأكيدات</th>
+        <th data-sort="int" data-tooltip="Nonce المستخدم في إثبات العمل">Nonce</th>
+        <th data-sort="string" data-tooltip="Bits (الصعوبة المشفرة)">Bits</th>
+        <th data-sort="string" data-tooltip="جذر ميركل للكتلة">Merkle Root</th>
+      </tr>
+    </thead>
+    <tbody class="list" id="tableBody"></tbody>
+  </table>
+</div>
 
-    // Demo: Populate blockData for blocks 1-99 with sample values.
-    for (let i = 1; i < 100; i++) {
-      blockData.push({
-        number: i,
-        hash: `00000000000000...${String(i).padStart(3, '0')}`,
-        time: `2009-01-${String(3 + Math.floor(i/6)).padStart(2,'0')} ${(18 + (i % 24)).toString().padStart(2,'0')}:${(i*7%60).toString().padStart(2,'0')}:00`,
-        txCount: 1,
-        reward: 50,
-        address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        txid: `txid${i}`,
-        note: (i === 9) ? 'First block mined by Hal Finney' : '',
-      });
+<!-- مكتبة List.js للبحث والفرز -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+
+<script>
+  // لتحويل التوقيت إلى UTC مقروء
+  function unixToUTC(ts) {
+    if (!ts) return 'N/A';
+    const d = new Date(ts * 1000);
+    return d.toISOString().replace('T', ' ').replace(/\..+/, '');
+  }
+
+  // لجلب ارتفاع آخر كتلة لتحديد التأكيدات
+  async function fetchBestHeight() {
+    try {
+      const res = await fetch('https://blockstream.info/api/blocks/tip/height');
+      if (!res.ok) throw new Error('فشل في جلب ارتفاع آخر كتلة');
+      const txt = await res.text();
+      return parseInt(txt, 10);
+    } catch {
+      return null;
+    }
+  }
+
+  // لجلب هاش كتلة بحسب الارتفاع
+  async function fetchBlockHash(height) {
+    const res = await fetch(`https://blockstream.info/api/block-height/${height}`);
+    if (!res.ok) throw new Error(`فشل في جلب هاش الكتلة للارتفاع ${height}`);
+    const txt = await res.text();
+    return txt.trim();
+  }
+
+  // لجلب بيانات الكتلة بحسب هاش
+  async function fetchBlockData(hash) {
+    const res = await fetch(`https://blockstream.info/api/block/${hash}`);
+    if (!res.ok) throw new Error(`فشل في جلب بيانات الكتلة بالهاش ${hash}`);
+    return res.json();
+  }
+
+  // لجلب معاملات الكتلة (صفحة واحدة كافية للكتل الأولى)
+  async function fetchBlockTxs(hash) {
+    const res = await fetch(`https://blockstream.info/api/block/${hash}/txs`);
+    if (!res.ok) throw new Error(`فشل في جلب معاملات الكتلة ${hash}`);
+    return res.json();
+  }
+
+  // لحساب مكافأة الكتلة حسب الارتفاع (نصف المكافأة كل 210000 كتلة)
+  function getBlockReward(height) {
+    const initialReward = 50;
+    const halvings = Math.floor(height / 210000);
+    if (halvings >= 64) return 0;
+    return initialReward / Math.pow(2, halvings);
+  }
+
+  // نسخ نص للحافظة
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('تم نسخ النص للحافظة');
+    }).catch(() => {
+      alert('فشل النسخ');
+    });
+  }
+
+  // إضافة زر نسخ إلى خلية
+  function addCopyButton(cell, text) {
+    const btn = document.createElement('a');
+    btn.textContent = 'نسخ';
+    btn.className = 'copy-btn';
+    btn.href = 'javascript:void(0);';
+    btn.title = 'نسخ إلى الحافظة';
+    btn.onclick = (e) => {
+      e.preventDefault();
+      copyToClipboard(text);
+    };
+    cell.appendChild(btn);
+  }
+
+  // إنشاء صف تفاصيل المعاملات (مخبأة في البداية)
+  function createTxsDetailsRow(colspan, txs, blockHeight) {
+    const tr = document.createElement('tr');
+    tr.className = 'details-row';
+    const td = document.createElement('td');
+    td.colSpan = colspan;
+
+    // بناء جدول المعاملات
+    const txTable = document.createElement('table');
+    txTable.className = 'transactions';
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+      <tr>
+        <th>معرف المعاملة</th>
+        <th>عدد المدخلات</th>
+        <th>عدد المخرجات</th>
+        <th>حجم المعاملة (بايت)</th>
+        <th>الرسوم (ساتوشي)</th>
+      </tr>
+    `;
+    txTable.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    txs.forEach(tx => {
+      const fee = tx.fee ?? 'N/A';
+      const trTx = document.createElement('tr');
+
+      const txidCell = document.createElement('td');
+      txidCell.innerHTML = `<code>${tx.txid}</code> <a href="https://blockstream.info/tx/${tx.txid}" target="_blank" rel="noopener noreferrer" title="عرض المعاملة">🔗</a>`;
+      addCopyButton(txidCell, tx.txid);
+
+      trTx.appendChild(txidCell);
+      trTx.appendChild(document.createElement('td')).textContent = tx.vin.length;
+      trTx.appendChild(document.createElement('td')).textContent = tx.vout.length;
+      trTx.appendChild(document.createElement('td')).textContent = tx.size;
+      trTx.appendChild(document.createElement('td')).textContent = fee;
+
+      tbody.appendChild(trTx);
+    });
+
+    txTable.appendChild(tbody);
+    td.appendChild(txTable);
+    tr.appendChild(td);
+    return tr;
+  }
+
+  // التبديل بين إظهار/إخفاء تفاصيل المعاملات
+  function toggleDetails(event) {
+    const btn = event.target;
+    if (!btn.classList.contains('collapsible')) return;
+
+    const tr = btn.closest('tr');
+    const nextTr = tr.nextElementSibling;
+
+    if (!nextTr || !nextTr.classList.contains('details-row')) return;
+
+    const isVisible = nextTr.style.display === 'table-row';
+    if (isVisible) {
+      nextTr.style.display = 'none';
+      btn.classList.remove('active');
+    } else {
+      nextTr.style.display = 'table-row';
+      btn.classList.add('active');
+    }
+  }
+
+  async function loadBlocks() {
+    const tbody = document.getElementById('tableBody');
+    const loading = document.getElementById('globalLoading');
+    const tableContainer = document.getElementById('tableContainer');
+
+    tbody.innerHTML = '';
+    loading.style.display = 'block';
+    tableContainer.style.display = 'none';
+
+    const bestHeight = await fetchBestHeight();
+
+    // جلب هاشات الكتل بالتوازي
+    let hashes = [];
+    try {
+      hashes = await Promise.all([...Array(10).keys()].map(h => fetchBlockHash(h)));
+    } catch (err) {
+      loading.textContent = 'فشل في جلب بعض هاشات الكتل: ' + err.message;
+      return;
     }
 
-    // Prepare nodes and edges
-    const nodes = [];
-    const edges = [];
+    // جلب بيانات الكتل بالتوازي
+    const blocksData = await Promise.all(hashes.map(hash => fetchBlockData(hash)));
 
-    blockData.forEach((block, idx) => {
-      const label = `#${block.number}`;
-      let nodeColor;
-      let shape = "box";
-      let title =
-        `<strong>Block #${block.number}</strong><br>
-        <b>Hash:</b> <a href="https://www.blockchain.com/btc/block/${block.hash}" target="_blank">${block.hash.substring(0,12)}...</a><br>
-        <b>Time:</b> ${block.time}<br>
-        <b>TX Count:</b> ${block.txCount}<br>
-        <b>Reward:</b> ${block.reward} BTC<br>
-        <b>Output:</b> <a href="https://www.blockchain.com/btc/address/${block.address}" target="_blank">${block.address.substring(0,12)}...</a><br>
-        <b>TXID:</b> <a href="https://www.blockchain.com/btc/tx/${block.txid}" target="_blank">${block.txid.substring(0,12)}...</a><br>
-        ${block.note ? `<b>Note:</b> ${block.note}<br>` : ''}`;
+    // جلب معاملات كل كتلة بالتوازي (للـ10 كتل)
+    const allTxs = await Promise.all(hashes.map(hash => fetchBlockTxs(hash)));
 
-      if (block.number === 0) {
-        nodeColor = { background: "#f7931a", border: "#b56d10", highlight: "#ffbb58" };
-        shape = "star";
-      } else if (block.number === 9) {
-        nodeColor = { background: "#00b894", border: "#007e5e", highlight: "#26ffae" };
-        shape = "diamond";
-      } else {
-        nodeColor = { background: "#404040", border: "#888", highlight: "#f7931a" };
-      }
-
-      nodes.push({
-        id: block.number,
-        label,
-        shape,
-        color: nodeColor,
-        font: { color: "#fff", size: 20, face: 'Segoe UI', bold: true },
-        title,
-      });
-
-      if (idx > 0) {
-        edges.push({
-          from: block.number - 1,
-          to: block.number,
-          arrows: 'to',
-          color: { color: "#f7931a", highlight: "#ffbb58", opacity: 0.6 },
-          label: block.reward + " BTC",
-          font: { color: "#f7931a", size: 14, strokeWidth: 0, strokeColor: "#181818", face: "Segoe UI" }
-        });
-      }
-    });
-
-    // Network options
-    const container = document.getElementById("network");
-    const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
-    const options = {
-      layout: {
-        hierarchical: {
-          direction: "LR",
-          sortMethod: "directed",
-          nodeSpacing: 70,
-          treeSpacing: 300,
-          levelSeparation: 60
+    for (let i = 0; i < 10; i++) {
+      const b = blocksData[i];
+      const txs = allTxs[i];
+      const height = i;
+      const reward = getBlockReward(height);
+      const confirmations = bestHeight !== null ? bestHeight - height + 1 : 'N/A';
+      let timeDelta = 'N/A';
+      if (i > 0) {
+        const prevTimestamp = blocksData[i - 1].timestamp;
+        if (prevTimestamp && b.timestamp) {
+          timeDelta = b.timestamp - prevTimestamp;
         }
-      },
-      interaction: {
-        hover: true,
-        tooltipDelay: 60,
-        zoomView: true,
-        dragView: true,
-        navigationButtons: true,
-        keyboard: {
-          enabled: true,
-          speed: { x: 20, y: 20, zoom: 0.7 },
-          bindToWindow: false
-        },
-        selectable: true,
-        selectConnectedEdges: false
-      },
-      physics: false,
-      nodes: {
-        borderWidth: 2,
-        shadow: true,
-      },
-      edges: {
-        width: 2,
-        smooth: {
-          enabled: true,
-          type: "cubicBezier",
-          roundness: 0.2
-        },
-        shadow: false,
-      },
-      height: "100%",
-      width: "100%",
-    };
+      }
 
-    const network = new vis.Network(container, data, options);
+      // صف الكتلة الرئيسي
+      const tr = document.createElement('tr');
 
-    // Accessibility: focus border
-    container.addEventListener('focus', () => {
-      container.style.boxShadow = '0 0 0 3px #f7931a';
+      // خلية أيقونة الفتح/الإغلاق
+      const toggleCell = document.createElement('td');
+      toggleCell.className = 'collapsible';
+      toggleCell.title = 'فتح/إغلاق معاملات الكتلة';
+      toggleCell.textContent = '▶';
+      tr.appendChild(toggleCell);
+
+      tr.innerHTML += `
+        <td class="height">${height}</td>
+        <td class="blockhash"><code>${b.id}</code></td>
+        <td class="prevhash"><code>${b.previousblockhash || 'N/A'}</code></td>
+        <td class="time">${unixToUTC(b.timestamp)}</td>
+        <td class="timedelta">${timeDelta}</td>
+        <td class="txcount">${b.tx_count}</td>
+        <td class="size">${b.size}</td>
+        <td class="weight">${b.weight}</td>
+        <td class="difficulty">${b.difficulty.toLocaleString()}</td>
+        <td class="reward">${reward}</td>
+        <td class="fees">غير متوفر</td>
+        <td class="confirmations">${confirmations}</td>
+        <td class="nonce">${b.nonce}</td>
+        <td class="bits">${b.bits}</td>
+        <td class="merkleroot"><code>${b.merkleroot}</code></td>
+      `;
+
+      // أزرار النسخ للهاشات والروابط
+      addCopyButton(tr.children[2], b.id);
+      if (b.previousblockhash) addCopyButton(tr.children[3], b.previousblockhash);
+      const hashCell = tr.children[2];
+      const link = document.createElement('a');
+      link.href = `https://blockstream.info/block/${b.id}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = '🔗';
+      link.style.marginRight = '5px';
+      link.title = 'عرض الكتلة في Blockstream Explorer';
+      hashCell.appendChild(link);
+
+      tbody.appendChild(tr);
+
+      // صف تفاصيل المعاملات (مخبأ)
+      const detailRow = createTxsDetailsRow(tr.children.length, txs, height);
+      tbody.appendChild(detailRow);
+    }
+
+    loading.style.display = 'none';
+    tableContainer.style.display = 'block';
+
+    // تفعيل التبديل عند الضغط على الخلية الأولى
+    tbody.querySelectorAll('.collapsible').forEach(el => {
+      el.addEventListener('click', toggleDetails);
     });
-    container.addEventListener('blur', () => {
-      container.style.boxShadow = '';
-    });
 
-    window.addEventListener('resize', () => network.redraw());
-  </script>
+    // تهيئة مكتبة List.js للبحث والفرز
+    if (window.listObj) {
+      window.listObj.clear();
+      window.listObj.add(tbody.querySelectorAll('tr:not(.details-row)'));
+    } else {
+      window.listObj = new List('tableContainer', {
+        valueNames: [
+          'height', 'blockhash', 'prevhash', 'time', 'timedelta', 'txcount',
+          'size', 'weight', 'difficulty', 'reward', 'fees', 'confirmations', 'nonce', 'bits', 'merkleroot'
+        ],
+        listClass: 'list',
+        searchClass: 'search',
+        sortClass: 'sort',
+        plugins: [ List.plugins.get('fuzzySearch') ]
+      });
+    }
+  }
+
+  // ربط زر التحديث
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadBlocks();
+  });
+
+  // تحميل أولي عند فتح الصفحة
+  loadBlocks();
+</script>
 </body>
 </html>
