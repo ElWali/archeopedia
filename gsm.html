@@ -1,262 +1,917 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>المتحري الذكي - تحليل أمني وتقني شامل</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #fafafa;
-      margin: 0;
-      padding: 0;
-      color: #212121;
-      direction: rtl;
-    }
-    header {
-      background-color: #1976d2;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      font-size: 1.7rem;
-      font-weight: 700;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    main {
-      padding: 1.5rem;
-      max-width: 900px;
-      margin: auto;
-    }
-    .card {
-      background: white;
-      border-radius: 10px;
-      padding: 1.5rem 1.8rem;
-      margin-bottom: 1.8rem;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      color: #0d47a1;
-      border-bottom: 2px solid #e3f2fd;
-      padding-bottom: 0.6rem;
-      font-weight: 700;
-      font-size: 1.3rem;
-    }
-    .info-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 1rem;
-    }
-    .info-item:last-child {
-      border-bottom: none;
-    }
-    .label {
-      font-weight: 700;
-      color: #455a64;
-      min-width: 180px;
-    }
-    #canvasFingerprintImg, #audioFingerprintCanvas {
-      display: block;
-      margin: 10px auto 20px auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    footer {
-      text-align: center;
-      font-size: 0.9rem;
-      padding: 1rem;
-      color: #666;
-    }
-    .note {
-      font-size: 0.85rem;
-      color: #999;
-      text-align: center;
-      margin-top: -1rem;
-      margin-bottom: 1.5rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المتحري الذكي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --border-color: #e9ecef;
+            --text-color: #343a40;
+            --heading-color: #212529;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: var(--heading-color);
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .info-card {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--heading-color);
+            flex-basis: 40%;
+            position: relative; /* For tooltip */
+        }
+
+        .info-value {
+            flex-basis: 55%;
+            text-align: left;
+            word-break: break-all;
+            direction: ltr; /* Ensure values like hashes are LTR */
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Align value to the left within its flex basis */
+        }
+
+        .info-value span {
+            flex-grow: 1;
+            text-align: right; /* Align text content to the right */
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 5px; /* Space between value and button */
+            padding: 0 5px;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px; /* Fixed width for consistent icon size */
+            height: 24px;
+        }
+
+        .copy-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .copy-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .status-ok {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .status-warning {
+            color: var(--warning-color);
+            font-weight: bold;
+        }
+
+        .status-error {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        .loading-text {
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+
+        .tooltip {
+            position: absolute;
+            top: 0;
+            right: 100%; /* Position to the left of the label */
+            transform: translateX(-10px); /* Offset from the label */
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            white-space: normal;
+            width: 250px; /* Adjust width as needed */
+            text-align: right;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 10;
+        }
+
+        .info-label:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .refresh-button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .refresh-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+        }
+
+        .refresh-button:hover {
+            background-color: #0056b3;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: var(--secondary-color);
+        }
+
+        /* Hidden canvas for fingerprinting */
+        #fingerprintCanvas, #audioFingerprintCanvas {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <header>🕵️‍♂️ المتحري الذكي - تحليل أمني وتقني شامل</header>
-  <main>
-    <div class="card" id="device-info">
-      <h2>🖥️ معلومات الجهاز والنظام</h2>
+    <div class="container">
+        <h1>المتحري الذكي</h1>
+
+        <div class="refresh-button-container">
+            <button id="refreshButton" class="refresh-button">تحديث البيانات</button>
+        </div>
+
+        <h2 class="section-title">معلومات الجهاز</h2>
+        <div class="info-card">
+            <div class="info-item">
+                <div class="info-label" data-tooltip="نظام التشغيل الذي يعمل عليه جهازك.">نظام التشغيل</div>
+                <div class="info-value" id="osInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="اسم المتصفح وإصداره.">المتصفح</div>
+                <div class="info-value" id="browserInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="إصدار نظام التشغيل.">إصدار نظام التشغيل</div>
+                <div class="info-value" id="osVersionInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="سلسلة وكيل المستخدم الخام للمتصفح.">وكيل المستخدم (User Agent)</div>
+                <div class="info-value" id="userAgentInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="تلميحات وكيل المستخدم الحديثة (إذا كانت مدعومة).">تلميحات وكيل المستخدم (Client Hints)</div>
+                <div class="info-value" id="clientHintsInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="اللغة الأساسية للمتصفح.">لغة المتصفح</div>
+                <div class="info-value" id="languageInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="جميع اللغات المفضلة في المتصفح.">اللغات المفضلة</div>
+                <div class="info-value" id="languagesInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="المنطقة الزمنية المحددة لجهازك.">المنطقة الزمنية</div>
+                <div class="info-value" id="timezoneInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="دقة شاشة جهازك (العرض × الارتفاع).">دقة الشاشة</div>
+                <div class="info-value" id="screenResolutionInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="عمق ألوان الشاشة بالبت.">عمق الألوان</div>
+                <div class="info-value" id="colorDepthInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="عدد أنوية المعالج المنطقية المتاحة للمتصفح.">أنوية المعالج</div>
+                <div class="info-value" id="cpuCoresInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="الذاكرة العشوائية (RAM) المقدرة للجهاز.">الذاكرة العشوائية (RAM)</div>
+                <div class="info-value" id="deviceMemoryInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="عدد نقاط اللمس المتزامنة التي يدعمها الجهاز.">نقاط اللمس القصوى</div>
+                <div class="info-value" id="maxTouchPointsInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="حالة البطارية (الشحن، مستوى الشحن).">حالة البطارية</div>
+                <div class="info-value" id="batteryStatusInfo"></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">معلومات الشبكة</h2>
+        <div class="info-card">
+            <div class="info-item">
+                <div class="info-label" data-tooltip="حالة الاتصال بالإنترنت.">حالة الاتصال</div>
+                <div class="info-value" id="onlineStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="نوع الاتصال بالشبكة (مثل Wi-Fi، خلوي).">نوع الاتصال</div>
+                <div class="info-value" id="connectionTypeInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="سرعة الاتصال المقدرة بالميغابت في الثانية.">سرعة الاتصال المقدرة</div>
+                <div class="info-value" id="effectiveTypeInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل الاتصال آمن عبر HTTPS؟">HTTPS مفعل</div>
+                <div class="info-value" id="httpsStatusInfo"></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">معلومات الأمان والخصوصية</h2>
+        <div class="info-card">
+            <div class="info-item">
+                <div class="info-label" data-tooltip="حالة تتبع عدم التتبع (Do Not Track).">عدم التتبع (Do Not Track)</div>
+                <div class="info-value" id="doNotTrackInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل ملفات تعريف الارتباط (الكوكيز) مفعلة؟">الكوكيز مفعلة</div>
+                <div class="info-value" id="cookiesEnabledInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل سياسة أمان المحتوى (CSP) مفعلة؟">سياسة أمان المحتوى (CSP)</div>
+                <div class="info-value" id="cspStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل مشاركة الموارد عبر الأصول (CORS) مدعومة؟">مشاركة الموارد عبر الأصول (CORS)</div>
+                <div class="info-value" id="corsStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل التخزين المحلي (Local Storage) متاح؟">التخزين المحلي (Local Storage)</div>
+                <div class="info-value" id="localStorageStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل تخزين الجلسة (Session Storage) متاح؟">تخزين الجلسة (Session Storage)</div>
+                <div class="info-value" id="sessionStorageStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل IndexedDB متاح؟">IndexedDB</div>
+                <div class="info-value" id="indexedDBStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل تم اكتشاف مانع إعلانات؟ (تقديري)">مانع الإعلانات</div>
+                <div class="info-value" id="adBlockerStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="هل Service Workers مدعومة؟">Service Workers</div>
+                <div class="info-value" id="serviceWorkerStatusInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="الأجهزة الصوتية والمرئية المتاحة (يتطلب إذن).">أجهزة الوسائط</div>
+                <div class="info-value" id="mediaDevicesInfo"></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">البصمات الرقمية</h2>
+        <div class="info-card">
+            <div class="info-item">
+                <div class="info-label" data-tooltip="بصمة Canvas: معرف فريد يتم إنشاؤه من كيفية عرض المتصفح للرسومات.">بصمة Canvas</div>
+                <div class="info-value" id="canvasFingerprintInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="بصمة الصوت: معرف فريد يتم إنشاؤه من كيفية معالجة المتصفح للصوت.">بصمة الصوت</div>
+                <div class="info-value" id="audioFingerprintInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="بصمة الخطوط: معرف فريد يتم إنشاؤه من كيفية عرض المتصفح للخطوط.">بصمة الخطوط</div>
+                <div class="info-value" id="fontFingerprintInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="معلومات WebGL (GPU): تفاصيل حول وحدة معالجة الرسومات.">معلومات WebGL (GPU)</div>
+                <div class="info-value" id="webglInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="بصمة WebGL (GPU): معرف فريد يتم إنشاؤه من إعدادات GPU.">بصمة WebGL (GPU)</div>
+                <div class="info-value" id="webglFingerprintInfo"></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">معلومات الأداء والتخزين</h2>
+        <div class="info-card">
+            <div class="info-item">
+                <div class="info-label" data-tooltip="الحد الأقصى لحجم كومة JavaScript.">حجم كومة JS الأقصى</div>
+                <div class="info-value" id="jsHeapSizeLimitInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="الاستخدام الحالي لكومة JavaScript.">استخدام كومة JS الحالي</div>
+                <div class="info-value" id="totalJSHeapSizeInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="الذاكرة المخصصة حاليًا لكومة JavaScript.">ذاكرة كومة JS المخصصة</div>
+                <div class="info-value" id="usedJSHeapSizeInfo"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" data-tooltip="المساحة التخزينية المقدرة المتاحة للمتصفح.">المساحة التخزينية المقدرة</div>
+                <div class="info-value" id="storageEstimateInfo"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>جميع البيانات المعروضة يتم جمعها محليًا بواسطة متصفحك ولا يتم إرسالها إلى أي خادم خارجي.</p>
+            <p>تم التطوير بواسطة ElWali ElAlaoui</p>
+        </div>
     </div>
 
-    <div class="card" id="network-info">
-      <h2>🌐 معلومات الشبكة والاتصال</h2>
-    </div>
+    <canvas id="fingerprintCanvas" width="200" height="20"></canvas>
+    <canvas id="audioFingerprintCanvas" width="1" height="1"></canvas>
 
-    <div class="card" id="security-info">
-      <h2>🔐 تحليل الأمان والخصوصية</h2>
-    </div>
+    <script>
+        // --- Constants for Arabic Labels and Tooltips ---
+        const LABELS = {
+            osInfo: { label: "نظام التشغيل", tooltip: "نظام التشغيل الذي يعمل عليه جهازك." },
+            browserInfo: { label: "المتصفح", tooltip: "اسم المتصفح وإصداره." },
+            osVersionInfo: { label: "إصدار نظام التشغيل", tooltip: "إصدار نظام التشغيل." },
+            userAgentInfo: { label: "وكيل المستخدم (User Agent)", tooltip: "سلسلة وكيل المستخدم الخام للمتصفح." },
+            clientHintsInfo: { label: "تلميحات وكيل المستخدم (Client Hints)", tooltip: "تلميحات وكيل المستخدم الحديثة (إذا كانت مدعومة)." },
+            languageInfo: { label: "لغة المتصفح", tooltip: "اللغة الأساسية للمتصفح." },
+            languagesInfo: { label: "اللغات المفضلة", tooltip: "جميع اللغات المفضلة في المتصفح." },
+            timezoneInfo: { label: "المنطقة الزمنية", tooltip: "المنطقة الزمنية المحددة لجهازك." },
+            screenResolutionInfo: { label: "دقة الشاشة", tooltip: "دقة شاشة جهازك (العرض × الارتفاع)." },
+            colorDepthInfo: { label: "عمق الألوان", tooltip: "عمق ألوان الشاشة بالبت." },
+            cpuCoresInfo: { label: "أنوية المعالج", tooltip: "عدد أنوية المعالج المنطقية المتاحة للمتصفح." },
+            deviceMemoryInfo: { label: "الذاكرة العشوائية (RAM)", tooltip: "الذاكرة العشوائية (RAM) المقدرة للجهاز." },
+            maxTouchPointsInfo: { label: "نقاط اللمس القصوى", tooltip: "عدد نقاط اللمس المتزامنة التي يدعمها الجهاز." },
+            batteryStatusInfo: { label: "حالة البطارية", tooltip: "حالة البطارية (الشحن، مستوى الشحن)." },
+            onlineStatusInfo: { label: "حالة الاتصال", tooltip: "حالة الاتصال بالإنترنت." },
+            connectionTypeInfo: { label: "نوع الاتصال", tooltip: "نوع الاتصال بالشبكة (مثل Wi-Fi، خلوي)." },
+            effectiveTypeInfo: { label: "سرعة الاتصال المقدرة", tooltip: "سرعة الاتصال المقدرة بالميغابت في الثانية." },
+            httpsStatusInfo: { label: "HTTPS مفعل", tooltip: "هل الاتصال آمن عبر HTTPS؟" },
+            doNotTrackInfo: { label: "عدم التتبع (Do Not Track)", tooltip: "حالة تتبع عدم التتبع (Do Not Track)." },
+            cookiesEnabledInfo: { label: "الكوكيز مفعلة", tooltip: "هل ملفات تعريف الارتباط (الكوكيز) مفعلة؟" },
+            cspStatusInfo: { label: "سياسة أمان المحتوى (CSP)", tooltip: "هل سياسة أمان المحتوى (CSP) مفعلة؟" },
+            corsStatusInfo: { label: "مشاركة الموارد عبر الأصول (CORS)", tooltip: "هل مشاركة الموارد عبر الأصول (CORS) مدعومة؟" },
+            localStorageStatusInfo: { label: "التخزين المحلي (Local Storage)", tooltip: "هل التخزين المحلي (Local Storage) متاح؟" },
+            sessionStorageStatusInfo: { label: "تخزين الجلسة (Session Storage)", tooltip: "هل تخزين الجلسة (Session Storage) متاح؟" },
+            indexedDBStatusInfo: { label: "IndexedDB", tooltip: "هل IndexedDB متاح؟" },
+            adBlockerStatusInfo: { label: "مانع الإعلانات", tooltip: "هل تم اكتشاف مانع إعلانات؟ (تقديري)" },
+            serviceWorkerStatusInfo: { label: "Service Workers", tooltip: "هل Service Workers مدعومة؟" },
+            mediaDevicesInfo: { label: "أجهزة الوسائط", tooltip: "الأجهزة الصوتية والمرئية المتاحة (يتطلب إذن)." },
+            canvasFingerprintInfo: { label: "بصمة Canvas", tooltip: "بصمة Canvas: معرف فريد يتم إنشاؤه من كيفية عرض المتصفح للرسومات." },
+            audioFingerprintInfo: { label: "بصمة الصوت", tooltip: "بصمة الصوت: معرف فريد يتم إنشاؤه من كيفية معالجة المتصفح للصوت." },
+            fontFingerprintInfo: { label: "بصمة الخطوط", tooltip: "بصمة الخطوط: معرف فريد يتم إنشاؤه من كيفية عرض المتصفح للخطوط." },
+            webglInfo: { label: "معلومات WebGL (GPU)", tooltip: "تفاصيل حول وحدة معالجة الرسومات." },
+            webglFingerprintInfo: { label: "بصمة WebGL (GPU)", tooltip: "بصمة WebGL (GPU): معرف فريد يتم إنشاؤه من إعدادات GPU." },
+            jsHeapSizeLimitInfo: { label: "حجم كومة JS الأقصى", tooltip: "الحد الأقصى لحجم كومة JavaScript." },
+            totalJSHeapSizeInfo: { label: "استخدام كومة JS الحالي", tooltip: "الاستخدام الحالي لكومة JavaScript." },
+            usedJSHeapSizeInfo: { label: "ذاكرة كومة JS المخصصة", tooltip: "الذاكرة المخصصة حاليًا لكومة JavaScript." },
+            storageEstimateInfo: { label: "المساحة التخزينية المقدرة", tooltip: "المساحة التخزينية المقدرة المتاحة للمتصفح." },
+        };
 
-    <div class="card" id="fingerprint-info">
-      <h2>🎯 فحص التتبع الرقمي (Fingerprinting)</h2>
-    </div>
+        const STATUS_MESSAGES = {
+            enabled: '<span class="status-ok">مفعل</span>',
+            disabled: '<span class="status-error">غير مفعل</span>',
+            supported: '<span class="status-ok">مدعوم</span>',
+            notSupported: '<span class="status-error">غير مدعوم</span>',
+            unknown: '<span class="status-warning">غير معروف</span>',
+            loading: '<span class="loading-text">جاري الجمع...</span>',
+            permissionDenied: '<span class="status-error">تم رفض الإذن</span>',
+            notAvailable: '<span class="status-warning">غير متاح</span>',
+            detected: '<span class="status-ok">تم الكشف</span>',
+            notDetected: '<span class="status-warning">لم يتم الكشف</span>',
+        };
 
-    <div class="card" id="performance-info">
-      <h2>⚡️ معلومات الأداء</h2>
-    </div>
+        // --- Helper Functions ---
 
-    <div class="card" id="storage-info">
-      <h2>💾 معلومات التخزين</h2>
-    </div>
-  </main>
-  <footer>
-    تم توليد هذه البيانات محليًا على جهازك. لا يتم إرسال أي بيانات لأي خادم خارجي.
-  </footer>
+        /**
+         * Displays information in the specified element with a copy button.
+         * @param {string} elementId - The ID of the HTML element to update.
+         * @param {string} value - The value to display.
+         * @param {string} [statusClass=''] - Optional class for status (e.g., 'status-ok', 'status-error').
+         */
+        function displayInfo(elementId, value, statusClass = '') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const span = document.createElement('span');
+                span.textContent = value;
+                if (statusClass) {
+                    span.classList.add(statusClass);
+                }
 
-  <script>
-    function addInfo(sectionId, label, value) {
-      const container = document.getElementById(sectionId);
-      const item = document.createElement("div");
-      item.className = "info-item";
-      item.innerHTML = `<span class="label">${label}</span><span>${value}</span>`;
-      container.appendChild(item);
-    }
+                const copyButton = document.createElement('button');
+                copyButton.classList.add('copy-btn');
+                copyButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                `;
+                copyButton.title = "نسخ";
+                copyButton.onclick = () => copyToClipboard(value, copyButton);
 
-    async function getBatteryInfo() {
-      if ('getBattery' in navigator) {
-        try {
-          const battery = await navigator.getBattery();
-          addInfo('device-info', 'مستوى البطارية', Math.round(battery.level * 100) + '%');
-          addInfo('device-info', 'يتم الشحن؟', battery.charging ? 'نعم' : 'لا');
-        } catch {
-          addInfo('device-info', 'معلومات البطارية', 'غير متوفرة');
+                element.innerHTML = ''; // Clear previous content
+                element.appendChild(copyButton);
+                element.appendChild(span);
+            }
         }
-      } else {
-        addInfo('device-info', 'معلومات البطارية', 'غير مدعومة في متصفحك');
-      }
-    }
 
-    function createCanvasFingerprintImage() {
-      const canvas = document.createElement("canvas");
-      canvas.width = 200;
-      canvas.height = 50;
-      const ctx = canvas.getContext("2d");
-      ctx.textBaseline = "top";
-      ctx.font = "14px 'Arial'";
-      ctx.fillText("Fingerprint Test 🎨", 2, 2);
-      // Append image to fingerprint-info section
-      const img = document.createElement("img");
-      img.id = "canvasFingerprintImg";
-      img.src = canvas.toDataURL();
-      img.alt = "صورة بصمة الكانفاس";
-      document.getElementById("fingerprint-info").appendChild(img);
-      return canvas.toDataURL().slice(0, 50) + "...";
-    }
+        /**
+         * Copies text to the clipboard.
+         * @param {string} text - The text to copy.
+         * @param {HTMLElement} button - The button element that triggered the copy.
+         */
+        async function copyToClipboard(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalTitle = button.title;
+                button.title = "تم النسخ!";
+                setTimeout(() => {
+                    button.title = originalTitle;
+                }, 1500);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                alert('فشل النسخ إلى الحافظة.');
+            }
+        }
 
-    function createAudioFingerprintCanvas() {
-      const canvas = document.createElement("canvas");
-      canvas.id = "audioFingerprintCanvas";
-      canvas.width = 300;
-      canvas.height = 60;
-      const ctx = canvas.getContext("2d");
-      // رسم موجة صوتية بسيطة (تمثيلية)
-      ctx.strokeStyle = "#1976d2";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let x = 0; x < canvas.width; x++) {
-        const y = 30 + 20 * Math.sin((x / canvas.width) * 20 * Math.PI);
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      document.getElementById("fingerprint-info").appendChild(canvas);
-      return "تم توليد صورة بصمة الصوت";
-    }
+        /**
+         * Hashes a string using SHA-256.
+         * @param {string} str - The string to hash.
+         * @returns {Promise<string>} - The SHA-256 hash as a hexadecimal string.
+         */
+        async function sha256(str) {
+            const textEncoder = new TextEncoder();
+            const data = textEncoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hexHash;
+        }
 
-    function getCSP() {
-      let csp = 'غير مدعومة';
-      try {
-        const meta = document.querySelector("meta[http-equiv='Content-Security-Policy']");
-        if (meta) csp = meta.content;
-      } catch {}
-      return csp;
-    }
+        /**
+         * Formats bytes into a human-readable string (KB, MB, GB).
+         * @param {number} bytes - The number of bytes.
+         * @returns {string} - Formatted string.
+         */
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
 
-    async function collectData() {
-      const nav = navigator;
-      addInfo("device-info", "نظام التشغيل", nav.platform);
-      addInfo("device-info", "المتصفح", nav.userAgent);
-      addInfo("device-info", "لغة الجهاز", nav.language);
-      addInfo("device-info", "اللغات المدعومة", nav.languages ? nav.languages.join(", ") : "غير متاحة");
-      addInfo("device-info", "دقة الشاشة", screen.width + "×" + screen.height);
-      addInfo("device-info", "نسبة التكبير (Pixel Ratio)", window.devicePixelRatio);
-      addInfo("device-info", "عدد الأنوية المنطقية", nav.hardwareConcurrency || "غير مدعوم");
-      addInfo("device-info", "ذاكرة RAM تقريبية (GB)", nav.deviceMemory || "غير مدعومة");
-      await getBatteryInfo();
+        // --- Data Collection Functions ---
 
-      // معلومات الشبكة
-      addInfo("network-info", "الاتصال بالإنترنت", nav.onLine ? "متصل" : "غير متصل");
-      addInfo("network-info", "HTTPS مفعل؟", location.protocol === "https:" ? "✅ نعم" : "❌ لا");
-      if ('connection' in nav) {
-        const conn = nav.connection;
-        addInfo("network-info", "نوع الاتصال", conn.effectiveType || "غير معروف");
-        addInfo("network-info", "سرعة الشبكة التقديرية (Mbps)", conn.downlink);
-        addInfo("network-info", "زمن الاستجابة (RTT ms)", conn.rtt);
-        addInfo("network-info", "حفظ البيانات مفعل؟", conn.saveData ? "نعم" : "لا");
-      } else {
-        addInfo("network-info", "معلومات الشبكة", "غير مدعومة");
-      }
+        async function collectDeviceInfo() {
+            displayInfo('osInfo', navigator.platform || STATUS_MESSAGES.notAvailable);
 
-      // الأمان والخصوصية
-      addInfo("security-info", "CORS (Cross-Origin)", typeof XMLHttpRequest !== "undefined" ? "✅ مدعوم" : "❌ غير مدعوم");
-      addInfo("security-info", "CSP (Content Security Policy)", getCSP());
-      addInfo("security-info", "HSTS (Strict Transport Security)", window.location.protocol === "https:" ? "مفعل عادةً (لا يمكن الكشف مباشرة)" : "غير مفعل");
-      addInfo("security-info", "X-Frame-Options", "لا يمكن الكشف عبر الجافاسكريبت");
-      addInfo("security-info", "Referrer-Policy", document.referrer ? document.referrer : "غير متاح");
-      addInfo("security-info", "كوكيز مفعلة؟", nav.cookieEnabled ? "نعم" : "لا");
-      addInfo("security-info", "Do Not Track", nav.doNotTrack || "غير متاح");
+            let browserName = "غير معروف";
+            let browserVersion = "غير معروف";
+            let osVersion = "غير معروف";
 
-      // بصمات التتبع
-      addInfo("fingerprint-info", "Canvas Fingerprint (Base64)", createCanvasFingerprintImage());
-      addInfo("fingerprint-info", "Audio Fingerprint", createAudioFingerprintCanvas());
+            const userAgent = navigator.userAgent;
+            displayInfo('userAgentInfo', userAgent);
 
-      // WebGL Fingerprint
-      try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-        const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-        addInfo("fingerprint-info", "GPU Renderer", renderer);
-        addInfo("fingerprint-info", "GPU Vendor", vendor);
-      } catch {
-        addInfo("fingerprint-info", "GPU Info", "غير مدعومة");
-      }
+            // Basic User Agent Parsing
+            if (userAgent.includes("Chrome") && !userAgent.includes("Edge")) {
+                browserName = "Chrome";
+                browserVersion = userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/)?.[1] || "غير معروف";
+            } else if (userAgent.includes("Firefox")) {
+                browserName = "Firefox";
+                browserVersion = userAgent.match(/Firefox\/(\d+\.\d+)/)?.[1] || "غير معروف";
+            } else if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) {
+                browserName = "Safari";
+                browserVersion = userAgent.match(/Version\/(\d+\.\d+)/)?.[1] || "غير معروف";
+            } else if (userAgent.includes("Edge")) {
+                browserName = "Edge";
+                browserVersion = userAgent.match(/Edge\/(\d+\.\d+)/)?.[1] || "غير معروف";
+            }
 
-      // الموقع الجغرافي (بحالة الموافقة)
-      if ('geolocation' in nav) {
-        nav.geolocation.getCurrentPosition(pos => {
-          addInfo("device-info", "الموقع الجغرافي (تقريبي)", `خط العرض: ${pos.coords.latitude}, خط الطول: ${pos.coords.longitude}`);
-        }, () => {
-          addInfo("device-info", "الموقع الجغرافي", "تم الرفض أو خطأ");
+            if (userAgent.includes("Windows NT")) {
+                osVersion = "Windows " + (userAgent.match(/Windows NT (\d+\.\d+)/)?.[1] || "غير معروف");
+            } else if (userAgent.includes("Macintosh")) {
+                osVersion = "macOS"; // More specific version is harder without client hints
+            } else if (userAgent.includes("Android")) {
+                osVersion = "Android " + (userAgent.match(/Android (\d+\.\d+)/)?.[1] || "غير معروف");
+            } else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) {
+                osVersion = "iOS"; // More specific version is harder
+            }
+
+            displayInfo('browserInfo', `${browserName} (${browserVersion})`);
+            displayInfo('osVersionInfo', osVersion);
+
+            // User Agent Client Hints
+            displayInfo('clientHintsInfo', STATUS_MESSAGES.loading);
+            if (navigator.userAgentData) {
+                try {
+                    const highEntropyValues = await navigator.userAgentData.getHighEntropyValues([
+                        "architecture", "model", "platformVersion", "uaFullVersion", "bitness"
+                    ]);
+                    let clientHintsText = `
+                        <br>المنصة: ${highEntropyValues.platform || 'غير معروف'}
+                        <br>إصدار المنصة: ${highEntropyValues.platformVersion || 'غير معروف'}
+                        <br>البنية: ${highEntropyValues.architecture || 'غير معروف'}
+                        <br>إصدار المتصفح الكامل: ${highEntropyValues.uaFullVersion || 'غير معروف'}
+                        <br>النموذج: ${highEntropyValues.model || 'غير معروف'}
+                        <br>البِتّية: ${highEntropyValues.bitness || 'غير معروف'}
+                    `;
+                    displayInfo('clientHintsInfo', clientHintsText);
+                } catch (e) {
+                    displayInfo('clientHintsInfo', STATUS_MESSAGES.permissionDenied);
+                    console.warn("Failed to get high entropy client hints:", e);
+                }
+            } else {
+                displayInfo('clientHintsInfo', STATUS_MESSAGES.notSupported);
+            }
+
+            displayInfo('languageInfo', navigator.language || STATUS_MESSAGES.notAvailable);
+            displayInfo('languagesInfo', (navigator.languages && navigator.languages.join(', ')) || STATUS_MESSAGES.notAvailable);
+            displayInfo('timezoneInfo', Intl.DateTimeFormat().resolvedOptions().timeZone || STATUS_MESSAGES.notAvailable);
+            displayInfo('screenResolutionInfo', `${screen.width}x${screen.height} (${screen.availWidth}x${screen.availHeight} متاح)`);
+            displayInfo('colorDepthInfo', `${screen.colorDepth} بت`);
+            displayInfo('cpuCoresInfo', navigator.hardwareConcurrency || STATUS_MESSAGES.notAvailable);
+            displayInfo('deviceMemoryInfo', (navigator.deviceMemory ? `${navigator.deviceMemory} GB` : STATUS_MESSAGES.notAvailable));
+            displayInfo('maxTouchPointsInfo', navigator.maxTouchPoints || 0);
+
+            // Battery Status
+            displayInfo('batteryStatusInfo', STATUS_MESSAGES.loading);
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    const batteryText = `
+                        <br>الشحن: ${battery.charging ? 'نعم' : 'لا'}
+                        <br>المستوى: ${(battery.level * 100).toFixed(0)}%
+                        <br>وقت الشحن: ${battery.chargingTime === Infinity ? 'غير معروف' : `${battery.chargingTime} ثانية`}
+                        <br>وقت التفريغ: ${battery.dischargingTime === Infinity ? 'غير معروف' : `${battery.dischargingTime} ثانية`}
+                    `;
+                    displayInfo('batteryStatusInfo', batteryText);
+                } catch (e) {
+                    displayInfo('batteryStatusInfo', STATUS_MESSAGES.notAvailable);
+                    console.warn("Battery API not available or permission denied:", e);
+                }
+            } else {
+                displayInfo('batteryStatusInfo', STATUS_MESSAGES.notSupported);
+            }
+        }
+
+        function collectNetworkInfo() {
+            displayInfo('onlineStatusInfo', navigator.onLine ? STATUS_MESSAGES.enabled : STATUS_MESSAGES.disabled, navigator.onLine ? 'status-ok' : 'status-error');
+
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (connection) {
+                displayInfo('connectionTypeInfo', connection.type || STATUS_MESSAGES.unknown);
+                displayInfo('effectiveTypeInfo', connection.effectiveType ? `${connection.effectiveType} (${connection.downlink || 'غير معروف'} Mbps)` : STATUS_MESSAGES.unknown);
+            } else {
+                displayInfo('connectionTypeInfo', STATUS_MESSAGES.notSupported);
+                displayInfo('effectiveTypeInfo', STATUS_MESSAGES.notSupported);
+            }
+
+            displayInfo('httpsStatusInfo', window.location.protocol === 'https:' ? STATUS_MESSAGES.enabled : STATUS_MESSAGES.disabled, window.location.protocol === 'https:' ? 'status-ok' : 'status-error');
+        }
+
+        async function collectSecurityInfo() {
+            displayInfo('doNotTrackInfo', navigator.doNotTrack === '1' ? STATUS_MESSAGES.enabled : (navigator.doNotTrack === '0' ? STATUS_MESSAGES.disabled : STATUS_MESSAGES.unknown), navigator.doNotTrack === '1' ? 'status-ok' : (navigator.doNotTrack === '0' ? 'status-error' : 'status-warning'));
+            displayInfo('cookiesEnabledInfo', navigator.cookieEnabled ? STATUS_MESSAGES.enabled : STATUS_MESSAGES.disabled, navigator.cookieEnabled ? 'status-ok' : 'status-error');
+
+            // CSP detection (heuristic)
+            const cspStatus = document.querySelector("meta[http-equiv='Content-Security-Policy']") ? STATUS_MESSAGES.enabled : STATUS_MESSAGES.disabled;
+            displayInfo('cspStatusInfo', cspStatus, cspStatus === STATUS_MESSAGES.enabled ? 'status-ok' : 'status-error');
+
+            // CORS detection (heuristic - by checking if XMLHttpRequest is available)
+            displayInfo('corsStatusInfo', typeof XMLHttpRequest !== 'undefined' ? STATUS_MESSAGES.supported : STATUS_MESSAGES.notSupported, typeof XMLHttpRequest !== 'undefined' ? 'status-ok' : 'status-error');
+
+            // Local Storage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                displayInfo('localStorageStatusInfo', STATUS_MESSAGES.enabled, 'status-ok');
+            } catch (e) {
+                displayInfo('localStorageStatusInfo', STATUS_MESSAGES.disabled, 'status-error');
+            }
+
+            // Session Storage
+            try {
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+                displayInfo('sessionStorageStatusInfo', STATUS_MESSAGES.enabled, 'status-ok');
+            } catch (e) {
+                displayInfo('sessionStorageStatusInfo', STATUS_MESSAGES.disabled, 'status-error');
+            }
+
+            // IndexedDB
+            displayInfo('indexedDBStatusInfo', 'indexedDB' in window ? STATUS_MESSAGES.enabled : STATUS_MESSAGES.disabled, 'indexedDB' in window ? 'status-ok' : 'status-error');
+
+            // Ad Blocker Detection (Heuristic)
+            displayInfo('adBlockerStatusInfo', STATUS_MESSAGES.loading);
+            try {
+                const testAd = document.createElement('div');
+                testAd.innerHTML = '&nbsp;';
+                testAd.className = 'adsbox'; // Common ad blocker class
+                testAd.style.position = 'absolute';
+                testAd.style.top = '-9999px';
+                testAd.style.left = '-9999px';
+                document.body.appendChild(testAd);
+                const isBlocked = testAd.offsetHeight === 0;
+                document.body.removeChild(testAd);
+                displayInfo('adBlockerStatusInfo', isBlocked ? STATUS_MESSAGES.detected : STATUS_MESSAGES.notDetected, isBlocked ? 'status-ok' : 'status-warning');
+            } catch (e) {
+                displayInfo('adBlockerStatusInfo', STATUS_MESSAGES.unknown);
+                console.warn("Ad blocker detection failed:", e);
+            }
+
+            // Service Worker Support
+            displayInfo('serviceWorkerStatusInfo', 'serviceWorker' in navigator ? STATUS_MESSAGES.supported : STATUS_MESSAGES.notSupported, 'serviceWorker' in navigator ? 'status-ok' : 'status-error');
+
+            // Media Devices
+            displayInfo('mediaDevicesInfo', STATUS_MESSAGES.loading);
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const audioInput = devices.filter(d => d.kind === 'audioinput').length;
+                    const videoInput = devices.filter(d => d.kind === 'videoinput').length;
+                    const audioOutput = devices.filter(d => d.kind === 'audiooutput').length;
+                    displayInfo('mediaDevicesInfo', `ميكروفونات: ${audioInput}, كاميرات: ${videoInput}, مكبرات صوت: ${audioOutput}`);
+                } catch (e) {
+                    displayInfo('mediaDevicesInfo', STATUS_MESSAGES.permissionDenied);
+                    console.warn("MediaDevices API error or permission denied:", e);
+                }
+            } else {
+                displayInfo('mediaDevicesInfo', STATUS_MESSAGES.notSupported);
+            }
+        }
+
+        async function collectFingerprintInfo() {
+            // Canvas Fingerprint
+            try {
+                const canvas = document.getElementById('fingerprintCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = "top";
+                ctx.font = "14px 'Arial'";
+                ctx.textBaseline = "alphabetic";
+                ctx.fillStyle = "#f60";
+                ctx.fillRect(125, 1, 62, 20);
+                ctx.fillStyle = "#069";
+                ctx.fillText("Hello, Smart Detective!", 2, 15);
+                ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                ctx.fillText("Hello, Smart Detective!", 4, 17);
+                const dataURL = canvas.toDataURL();
+                const hash = await sha256(dataURL);
+                displayInfo('canvasFingerprintInfo', hash);
+            } catch (e) {
+                displayInfo('canvasFingerprintInfo', STATUS_MESSAGES.notAvailable);
+                console.error("Canvas fingerprinting failed:", e);
+            }
+
+            // Advanced Audio Fingerprint
+            displayInfo('audioFingerprintInfo', STATUS_MESSAGES.loading);
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const analyser = audioContext.createAnalyser();
+                const gain = audioContext.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime); // 1kHz tone
+
+                gain.gain.setValueAtTime(0, audioContext.currentTime); // Start muted
+                gain.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.1); // Fade in
+                gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2); // Fade out
+
+                oscillator.connect(gain);
+                gain.connect(analyser);
+                analyser.connect(audioContext.destination); // Connect to destination to ensure processing
+
+                oscillator.start(0);
+                oscillator.stop(audioContext.currentTime + 0.3); // Play for a short duration
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                // Wait for audio processing to complete
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                analyser.getByteFrequencyData(dataArray);
+                const audioHash = await sha256(dataArray.join(','));
+                displayInfo('audioFingerprintInfo', audioHash);
+                audioContext.close(); // Clean up
+            } catch (e) {
+                displayInfo('audioFingerprintInfo', STATUS_MESSAGES.notSupported);
+                console.error("Audio fingerprinting failed:", e);
+            }
+
+            // Font Fingerprinting
+            displayInfo('fontFingerprintInfo', STATUS_MESSAGES.loading);
+            try {
+                const testString = "mmmmmmmmmmlli"; // String to measure
+                const baseFont = "monospace";
+                const testFonts = [
+                    "Arial", "Verdana", "Times New Roman", "Courier New", "Georgia",
+                    "Palatino Linotype", "Trebuchet MS", "Comic Sans MS", "Impact",
+                    "Lucida Sans Unicode", "Tahoma", "Geneva", "Lucida Grande", "Arial Black",
+                    "Garamond", "Book Antiqua", "MS Sans Serif", "MS Serif", "System"
+                ];
+
+                const span = document.createElement('span');
+                span.style.position = 'absolute';
+                span.style.left = '-9999px';
+                span.style.top = '-9999px';
+                span.style.visibility = 'hidden';
+                span.style.fontSize = '72px';
+                span.innerHTML = testString;
+                document.body.appendChild(span);
+
+                const fontMetrics = {};
+                const baseWidth = span.offsetWidth;
+
+                for (const font of testFonts) {
+                    span.style.fontFamily = `'${font}', ${baseFont}`;
+                    fontMetrics[font] = span.offsetWidth - baseWidth;
+                }
+                document.body.removeChild(span);
+
+                const fontHash = await sha256(JSON.stringify(fontMetrics));
+                displayInfo('fontFingerprintInfo', fontHash);
+            } catch (e) {
+                displayInfo('fontFingerprintInfo', STATUS_MESSAGES.notAvailable);
+                console.error("Font fingerprinting failed:", e);
+            }
+
+            // WebGL Info & Fingerprint
+            displayInfo('webglInfo', STATUS_MESSAGES.loading);
+            displayInfo('webglFingerprintInfo', STATUS_MESSAGES.loading);
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'غير معروف';
+                    const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'غير معروف';
+
+                    let webglDetails = `
+                        <br>المورد: ${vendor}
+                        <br>المُصيّر: ${renderer}
+                        <br>إصدار WebGL: ${gl.getParameter(gl.VERSION)}
+                        <br>إصدار لغة التظليل: ${gl.getParameter(gl.SHADING_LANGUAGE_VERSION)}
+                        <br>الحد الأقصى لحجم النسيج: ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}
+                        <br>الحد الأقصى لعدد وحدات النسيج: ${gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)}
+                        <br>الحد الأقصى لعدد نقاط العرض: ${gl.getParameter(gl.MAX_VIEWPORT_DIMS).join('x')}
+                        <br>الملحقات: ${gl.getSupportedExtensions().join(', ')}
+                    `;
+                    displayInfo('webglInfo', webglDetails);
+
+                    // Generate WebGL fingerprint
+                    const params = {};
+                    const paramNames = [
+                        gl.VENDOR, gl.RENDERER, gl.VERSION, gl.SHADING_LANGUAGE_VERSION,
+                        gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS, gl.MAX_CUBE_MAP_TEXTURE_SIZE,
+                        gl.MAX_FRAGMENT_UNIFORM_VECTORS, gl.MAX_RENDERBUFFER_SIZE,
+                        gl.MAX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_SIZE,
+                        gl.MAX_VARYING_VECTORS, gl.MAX_VERTEX_ATTRIBS,
+                        gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_VERTEX_UNIFORM_VECTORS,
+                        gl.NUM_COMPRESSED_TEXTURE_FORMATS, gl.NUM_SHADER_BINARY_FORMATS
+                    ];
+
+                    for (const param of paramNames) {
+                        try {
+                            params[param] = gl.getParameter(param);
+                        } catch (e) {
+                            params[param] = 'Error';
+                        }
+                    }
+                    params.extensions = gl.getSupportedExtensions().sort(); // Sort for consistent hash
+
+                    const webglHash = await sha256(JSON.stringify(params));
+                    displayInfo('webglFingerprintInfo', webglHash);
+
+                } else {
+                    displayInfo('webglInfo', STATUS_MESSAGES.notSupported);
+                    displayInfo('webglFingerprintInfo', STATUS_MESSAGES.notSupported);
+                }
+            } catch (e) {
+                displayInfo('webglInfo', STATUS_MESSAGES.notAvailable);
+                displayInfo('webglFingerprintInfo', STATUS_MESSAGES.notAvailable);
+                console.error("WebGL information/fingerprinting failed:", e);
+            }
+        }
+
+        async function collectPerformanceAndStorageInfo() {
+            const performance = window.performance;
+            if (performance && performance.memory) {
+                displayInfo('jsHeapSizeLimitInfo', formatBytes(performance.memory.jsHeapSizeLimit));
+                displayInfo('totalJSHeapSizeInfo', formatBytes(performance.memory.totalJSHeapSize));
+                displayInfo('usedJSHeapSizeInfo', formatBytes(performance.memory.usedJSHeapSize));
+            } else {
+                displayInfo('jsHeapSizeLimitInfo', STATUS_MESSAGES.notSupported);
+                displayInfo('totalJSHeapSizeInfo', STATUS_MESSAGES.notSupported);
+                displayInfo('usedJSHeapSizeInfo', STATUS_MESSAGES.notSupported);
+            }
+
+            // Storage Estimate
+            displayInfo('storageEstimateInfo', STATUS_MESSAGES.loading);
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    displayInfo('storageEstimateInfo', `${formatBytes(estimate.usage)} من ${formatBytes(estimate.quota)} (${((estimate.usage / estimate.quota) * 100).toFixed(2)}%)`);
+                } catch (e) {
+                    displayInfo('storageEstimateInfo', STATUS_MESSAGES.notAvailable);
+                    console.warn("Storage estimate failed:", e);
+                }
+            } else {
+                displayInfo('storageEstimateInfo', STATUS_MESSAGES.notSupported);
+            }
+        }
+
+        // --- Main Collection Function ---
+        async function collectAllData() {
+            // Set all fields to loading initially
+            for (const key in LABELS) {
+                displayInfo(key, STATUS_MESSAGES.loading);
+            }
+
+            await collectDeviceInfo();
+            collectNetworkInfo();
+            await collectSecurityInfo();
+            await collectFingerprintInfo();
+            await collectPerformanceAndStorageInfo();
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', collectAllData);
+        document.getElementById('refreshButton').addEventListener('click', collectAllData);
+
+        // Initialize tooltips
+        document.querySelectorAll('.info-label').forEach(label => {
+            const tooltipText = label.getAttribute('data-tooltip');
+            if (tooltipText) {
+                const tooltip = document.createElement('div');
+                tooltip.classList.add('tooltip');
+                tooltip.textContent = tooltipText;
+                label.appendChild(tooltip);
+            }
         });
-      } else {
-        addInfo("device-info", "الموقع الجغرافي", "غير مدعوم");
-      }
 
-      // معلومات الأداء
-      addInfo("performance-info", "سرعة المعالج", nav.hardwareConcurrency ? `${nav.hardwareConcurrency} نواة` : "غير مدعوم");
-      addInfo("performance-info", "سرعة الشاشة", screen.refreshRate ? `${screen.refreshRate} هرتز` : "غير مدعومة");
-
-      // معلومات التخزين
-      if ('storage' in nav && 'estimate' in nav.storage) {
-        nav.storage.estimate().then(estimate => {
-          addInfo("storage-info", "سعة التخزين التقديرية", `${estimate.quota / (1024 * 1024)} ميجابايت`);
-          addInfo("storage-info", "الاستخدام الحالي", `${estimate.usage / (1024 * 1024)} ميجابايت`);
-        });
-      } else {
-        addInfo("storage-info", "معلومات التخزين", "غير مدعومة");
-      }
-    }
-
-    collectData();
-  </script>
+    </script>
 </body>
 </html>
