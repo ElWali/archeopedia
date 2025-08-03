@@ -63,6 +63,7 @@
     #modalfeedback {
       color: darkred;
       font-size: 0.9em;
+      min-height: 1.2em;
     }
   </style>
 </head>
@@ -80,7 +81,7 @@
 
   <div id="chatbox"></div>
 
-  <input type="text" id="prompt" placeholder="Type your message..." />
+  <input type="text" id="prompt" placeholder="Type your message..." autocomplete="off" />
   <button id="sendBtn">Send</button>
 
   <script>
@@ -91,6 +92,7 @@
       if (key) {
         document.getElementById("openaikeyInput").value = key;
         document.getElementById("apikey").value = key;
+        document.getElementById("modalfeedback").innerText = ""; // clear feedback on load if key exists
       } else {
         document.getElementById("modalfeedback").innerText = "Please set your OpenAI API key.";
       }
@@ -98,12 +100,15 @@
 
     document.getElementById("saveKeys").addEventListener("click", function () {
       const key = document.getElementById("openaikeyInput").value.trim();
+      const feedback = document.getElementById("modalfeedback");
       if (key !== "") {
         localStorage.setItem("openaikey", key);
-        document.getElementById("modalfeedback").innerText = "Key saved successfully!";
         document.getElementById("apikey").value = key;
+        feedback.style.color = "green";
+        feedback.innerText = "Key saved successfully!";
       } else {
-        document.getElementById("modalfeedback").innerText = "API key cannot be empty.";
+        feedback.style.color = "darkred";
+        feedback.innerText = "API key cannot be empty.";
       }
     });
 
@@ -118,18 +123,27 @@
 
     document.getElementById("sendBtn").addEventListener("click", sendMessage);
     document.getElementById("prompt").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") sendMessage();
+      if (e.key === "Enter" && this.value.trim() !== "") {
+        e.preventDefault(); // prevent newline
+        sendMessage();
+      }
     });
 
     async function sendMessage() {
       const apikey = document.getElementById("apikey").value.trim();
       const promptInput = document.getElementById("prompt");
+      const sendBtn = document.getElementById("sendBtn");
       const prompt = promptInput.value.trim();
-      if (!apikey) return alert("OpenAI API key not set.");
+
+      if (!apikey) {
+        alert("OpenAI API key not set.");
+        return;
+      }
       if (!prompt) return;
 
       showMessage("user", prompt);
       promptInput.value = "";
+      sendBtn.disabled = true;
 
       chatMemory.push({ role: "user", content: prompt });
 
@@ -159,6 +173,8 @@
 
       } catch (error) {
         showMessage("assistant", "Error: " + error.message);
+      } finally {
+        sendBtn.disabled = false;
       }
     }
 
