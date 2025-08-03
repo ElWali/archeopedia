@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>المتحري الذكي - تحليل أمني وتقني شامل</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #fafafa;
+      margin: 0;
+      padding: 0;
+      color: #212121;
+      direction: rtl;
+    }
+    header {
+      background-color: #1976d2;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.7rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    main {
+      padding: 1.5rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem 1.8rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #0d47a1;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 0.6rem;
+      font-weight: 700;
+      font-size: 1.3rem;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 1rem;
+    }
+    .info-item:last-child {
+      border-bottom: none;
+    }
+    .label {
+      font-weight: 700;
+      color: #455a64;
+      min-width: 180px;
+    }
+    #canvasFingerprintImg, #audioFingerprintCanvas {
+      display: block;
+      margin: 10px auto 20px auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 1rem;
+      color: #666;
+    }
+    .note {
+      font-size: 0.85rem;
+      color: #999;
+      text-align: center;
+      margin-top: -1rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>🕵️‍♂️ المتحري الذكي - تحليل أمني وتقني شامل</header>
+  <main>
+    <div class="card" id="device-info">
+      <h2>🖥️ معلومات الجهاز والنظام</h2>
+    </div>
+
+    <div class="card" id="network-info">
+      <h2>🌐 معلومات الشبكة والاتصال</h2>
+    </div>
+
+    <div class="card" id="security-info">
+      <h2>🔐 تحليل الأمان والخصوصية</h2>
+    </div>
+
+    <div class="card" id="fingerprint-info">
+      <h2>🎯 فحص التتبع الرقمي (Fingerprinting)</h2>
+    </div>
+
+    <div class="card" id="performance-info">
+      <h2>⚡️ معلومات الأداء</h2>
+    </div>
+
+    <div class="card" id="storage-info">
+      <h2>💾 معلومات التخزين</h2>
+    </div>
+  </main>
+  <footer>
+    تم توليد هذه البيانات محليًا على جهازك. لا يتم إرسال أي بيانات لأي خادم خارجي.
+  </footer>
+
+  <script>
+    function addInfo(sectionId, label, value) {
+      const container = document.getElementById(sectionId);
+      const item = document.createElement("div");
+      item.className = "info-item";
+      item.innerHTML = `<span class="label">${label}</span><span>${value}</span>`;
+      container.appendChild(item);
+    }
+
+    async function getBatteryInfo() {
+      if ('getBattery' in navigator) {
+        try {
+          const battery = await navigator.getBattery();
+          addInfo('device-info', 'مستوى البطارية', Math.round(battery.level * 100) + '%');
+          addInfo('device-info', 'يتم الشحن؟', battery.charging ? 'نعم' : 'لا');
+        } catch {
+          addInfo('device-info', 'معلومات البطارية', 'غير متوفرة');
+        }
+      } else {
+        addInfo('device-info', 'معلومات البطارية', 'غير مدعومة في متصفحك');
+      }
+    }
+
+    function createCanvasFingerprintImage() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 200;
+      canvas.height = 50;
+      const ctx = canvas.getContext("2d");
+      ctx.textBaseline = "top";
+      ctx.font = "14px 'Arial'";
+      ctx.fillText("Fingerprint Test 🎨", 2, 2);
+      // Append image to fingerprint-info section
+      const img = document.createElement("img");
+      img.id = "canvasFingerprintImg";
+      img.src = canvas.toDataURL();
+      img.alt = "صورة بصمة الكانفاس";
+      document.getElementById("fingerprint-info").appendChild(img);
+      return canvas.toDataURL().slice(0, 50) + "...";
+    }
+
+    function createAudioFingerprintCanvas() {
+      const canvas = document.createElement("canvas");
+      canvas.id = "audioFingerprintCanvas";
+      canvas.width = 300;
+      canvas.height = 60;
+      const ctx = canvas.getContext("2d");
+      // رسم موجة صوتية بسيطة (تمثيلية)
+      ctx.strokeStyle = "#1976d2";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x < canvas.width; x++) {
+        const y = 30 + 20 * Math.sin((x / canvas.width) * 20 * Math.PI);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      document.getElementById("fingerprint-info").appendChild(canvas);
+      return "تم توليد صورة بصمة الصوت";
+    }
+
+    function getCSP() {
+      let csp = 'غير مدعومة';
+      try {
+        const meta = document.querySelector("meta[http-equiv='Content-Security-Policy']");
+        if (meta) csp = meta.content;
+      } catch {}
+      return csp;
+    }
+
+    async function collectData() {
+      const nav = navigator;
+      addInfo("device-info", "نظام التشغيل", nav.platform);
+      addInfo("device-info", "المتصفح", nav.userAgent);
+      addInfo("device-info", "لغة الجهاز", nav.language);
+      addInfo("device-info", "اللغات المدعومة", nav.languages ? nav.languages.join(", ") : "غير متاحة");
+      addInfo("device-info", "دقة الشاشة", screen.width + "×" + screen.height);
+      addInfo("device-info", "نسبة التكبير (Pixel Ratio)", window.devicePixelRatio);
+      addInfo("device-info", "عدد الأنوية المنطقية", nav.hardwareConcurrency || "غير مدعوم");
+      addInfo("device-info", "ذاكرة RAM تقريبية (GB)", nav.deviceMemory || "غير مدعومة");
+      await getBatteryInfo();
+
+      // معلومات الشبكة
+      addInfo("network-info", "الاتصال بالإنترنت", nav.onLine ? "متصل" : "غير متصل");
+      addInfo("network-info", "HTTPS مفعل؟", location.protocol === "https:" ? "✅ نعم" : "❌ لا");
+      if ('connection' in nav) {
+        const conn = nav.connection;
+        addInfo("network-info", "نوع الاتصال", conn.effectiveType || "غير معروف");
+        addInfo("network-info", "سرعة الشبكة التقديرية (Mbps)", conn.downlink);
+        addInfo("network-info", "زمن الاستجابة (RTT ms)", conn.rtt);
+        addInfo("network-info", "حفظ البيانات مفعل؟", conn.saveData ? "نعم" : "لا");
+      } else {
+        addInfo("network-info", "معلومات الشبكة", "غير مدعومة");
+      }
+
+      // الأمان والخصوصية
+      addInfo("security-info", "CORS (Cross-Origin)", typeof XMLHttpRequest !== "undefined" ? "✅ مدعوم" : "❌ غير مدعوم");
+      addInfo("security-info", "CSP (Content Security Policy)", getCSP());
+      addInfo("security-info", "HSTS (Strict Transport Security)", window.location.protocol === "https:" ? "مفعل عادةً (لا يمكن الكشف مباشرة)" : "غير مفعل");
+      addInfo("security-info", "X-Frame-Options", "لا يمكن الكشف عبر الجافاسكريبت");
+      addInfo("security-info", "Referrer-Policy", document.referrer ? document.referrer : "غير متاح");
+      addInfo("security-info", "كوكيز مفعلة؟", nav.cookieEnabled ? "نعم" : "لا");
+      addInfo("security-info", "Do Not Track", nav.doNotTrack || "غير متاح");
+
+      // بصمات التتبع
+      addInfo("fingerprint-info", "Canvas Fingerprint (Base64)", createCanvasFingerprintImage());
+      addInfo("fingerprint-info", "Audio Fingerprint", createAudioFingerprintCanvas());
+
+      // WebGL Fingerprint
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+        addInfo("fingerprint-info", "GPU Renderer", renderer);
+        addInfo("fingerprint-info", "GPU Vendor", vendor);
+      } catch {
+        addInfo("fingerprint-info", "GPU Info", "غير مدعومة");
+      }
+
+      // الموقع الجغرافي (بحالة الموافقة)
+      if ('geolocation' in nav) {
+        nav.geolocation.getCurrentPosition(pos => {
+          addInfo("device-info", "الموقع الجغرافي (تقريبي)", `خط العرض: ${pos.coords.latitude}, خط الطول: ${pos.coords.longitude}`);
+        }, () => {
+          addInfo("device-info", "الموقع الجغرافي", "تم الرفض أو خطأ");
+        });
+      } else {
+        addInfo("device-info", "الموقع الجغرافي", "غير مدعوم");
+      }
+
+      // معلومات الأداء
+      addInfo("performance-info", "سرعة المعالج", nav.hardwareConcurrency ? `${nav.hardwareConcurrency} نواة` : "غير مدعوم");
+      addInfo("performance-info", "سرعة الشاشة", screen.refreshRate ? `${screen.refreshRate} هرتز` : "غير مدعومة");
+
+      // معلومات التخزين
+      if ('storage' in nav && 'estimate' in nav.storage) {
+        nav.storage.estimate().then(estimate => {
+          addInfo("storage-info", "سعة التخزين التقديرية", `${estimate.quota / (1024 * 1024)} ميجابايت`);
+          addInfo("storage-info", "الاستخدام الحالي", `${estimate.usage / (1024 * 1024)} ميجابايت`);
+        });
+      } else {
+        addInfo("storage-info", "معلومات التخزين", "غير مدعومة");
+      }
+    }
+
+    collectData();
+  </script>
+</body>
+</html>
