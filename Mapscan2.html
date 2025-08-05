@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <title>GeoAnalytics Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1557b0;
+      --secondary: #34a853;
+      --accent: #fbbc05;
+      --danger: #ea4335;
+      --light: #f8f9fa;
+      --dark: #0f1115;
+      --darker: #06080c;
+      --gray: #5f6368;
+      --border: #dadce0;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --radius: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-fast: all 0.15s ease-in-out;
+      --header-height: 64px;
+      --sidebar-width: 320px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: #0f1115;
+      color: #e8eaed;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--darker) 0%, #1a1c20 100%);
+      color: white;
+      padding: 0 1.5rem;
+      height: var(--header-height);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .logo-icon {
+      color: var(--primary);
+      font-size: 1.8rem;
+    }
+
+    .search-container {
+      position: relative;
+      width: 400px;
+      max-width: 60%;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      padding-left: 36px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+
+    .search-box::placeholder {
+      color: #9aa0a6;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9aa0a6;
+    }
+
+    .header-icons {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+      font-size: 1.1rem;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .icon-btn.active {
+      background: rgba(26, 115, 232, 0.3);
+      color: var(--primary);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin-top: var(--header-height);
+    }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+    }
+
+    .sidebar {
+      width: var(--sidebar-width);
+      background: linear-gradient(135deg, #1a1c20 0%, #0f1115 100%);
+      border-right: 1px solid #2c2e32;
+      padding: 1.5rem;
+      overflow-y: auto;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #2c2e32;
+    }
+
+    .sidebar-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .close-sidebar {
+      background: none;
+      border: none;
+      color: #9aa0a6;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: var(--transition-fast);
+    }
+
+    .close-sidebar:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .layer-item {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      border: 1px solid #2c2e32;
+      transition: var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .layer-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--primary);
+    }
+
+    .layer-item.active {
+      background: rgba(26, 115, 232, 0.2);
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+    }
+
+    .layer-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .layer-name {
+      font-size: 0.95rem;
+      color: white;
+      font-weight: 500;
+    }
+
+    .layer-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4285f4;
+    }
+
+    .layer-item.inactive .layer-status {
+      background: #ea4335;
+    }
+
+    .analysis-panel {
+      margin-top: 1.5rem;
+      padding: 1.2rem;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      border: 1px solid #2c2e32;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .analysis-content {
+      color: #9aa0a6;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+    }
+
+    .data-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .data-label {
+      color: #9aa0a6;
+      margin-bottom: 0.3rem;
+    }
+
+    .data-value {
+      color: white;
+      font-weight: 500;
+    }
+
+    #map {
+      flex: 1;
+      position: relative;
+    }
+
+    .leaflet-container {
+      background: #0f1115;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1c20 0%, #0f1115 100%);
+      border: 1px solid #2c2e32;
+    }
+
+    .popup-container {
+      min-width: 400px;
+      max-width: 500px;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .popup-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 1.2rem 1.5rem;
+      border-radius: 12px 12px 0 0;
+      margin: -1px -1px 0 -1px;
+    }
+
+    .popup-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .popup-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-top: 0.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .popup-body {
+      padding: 1.5rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .data-section {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.2rem;
+      border-bottom: 1px solid #2c2e32;
+    }
+
+    .data-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .data-item-detailed {
+      margin-bottom: 0.8rem;
+      padding: 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      border: 1px solid #2c2e32;
+      transition: var(--transition-fast);
+    }
+
+    .data-item-detailed:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--primary);
+      transform: translateX(6px);
+    }
+
+    .data-label-detailed {
+      font-weight: 500;
+      color: #9aa0a6;
+      margin-bottom: 0.3rem;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .data-value-detailed {
+      color: white;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      padding-right: 1.5rem;
+    }
+
+    .data-value-detailed b {
+      color: white;
+      font-weight: 600;
+    }
+
+    .coordinates {
+      display: flex;
+      gap: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .coord-item {
+      flex: 1;
+      background: rgba(26, 115, 232, 0.2);
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      text-align: center;
+      border: 1px solid rgba(26, 115, 232, 0.3);
+      font-family: 'Roboto Mono', monospace;
+      color: white;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      color: #9aa0a6;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: var(--danger);
+      font-weight: 500;
+      text-align: center;
+      padding: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .popup-footer {
+      text-align: center;
+      padding: 1rem 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-top: 1px solid #2c2e32;
+      border-radius: 0 0 12px 12px;
+      font-size: 0.85rem;
+      color: #9aa0a6;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: rgba(26, 115, 232, 0.1);
+    }
+
+    .scientific-tools {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .tool-card {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #2c2e32;
+      text-align: center;
+      transition: var(--transition-fast);
+    }
+
+    .tool-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-color: var(--primary);
+    }
+
+    .tool-title {
+      font-weight: 500;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .tool-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .map-marker {
+      background: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      border: 2px solid var(--primary);
+      position: relative;
+    }
+
+    .map-marker::after {
+      content: '';
+      width: 14px;
+      height: 14px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .language-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #9aa0a6;
+    }
+
+    .language-option {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #9aa0a6;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .language-option:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .language-option.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(15, 17, 21, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid #2c2e32;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      z-index: 1000;
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(26, 115, 232, 0.3);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .zoom-btn {
+      background: rgba(15, 17, 21, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid #2c2e32;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 1.2rem;
+    }
+
+    .zoom-btn:hover {
+      background: rgba(26, 115, 232, 0.3);
+      border-color: var(--primary);
+    }
+
+    .zoom-btn:active {
+      transform: translateY(1px);
+    }
+
+    .compass {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: rgba(15, 17, 21, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid #2c2e32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      z-index: 1000;
+    }
+
+    .compass:hover {
+      transform: rotate(360deg);
+    }
+
+    .compass::after {
+      content: 'N';
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    @media (max-width: 1024px) {
+      .search-container {
+        width: 300px;
+      }
+      
+      .sidebar {
+        width: 280px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --sidebar-width: 280px;
+      }
+      
+      .search-container {
+        width: 200px;
+      }
+      
+      .header-content {
+        gap: 0.5rem;
+      }
+      
+      .logo {
+        font-size: 1.3rem;
+      }
+      
+      .popup-container {
+        min-width: 320px;
+        max-width: 100%;
+      }
+      
+      .coordinates {
+        flex-direction: column;
+      }
+      
+      .scientific-tools {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --sidebar-width: 100%;
+        --header-height: 56px;
+      }
+      
+      header {
+        padding: 0 1rem;
+        height: var(--header-height);
+      }
+      
+      .search-container {
+        width: 120px;
+      }
+      
+      .logo {
+        font-size: 1.2rem;
+      }
+      
+      .sidebar {
+        position: fixed;
+        top: var(--header-height);
+        left: -100%;
+        height: calc(100vh - var(--header-height));
+        z-index: 1500;
+        transform: translateX(0);
+        transition: transform 0.3s ease-out;
+      }
+      
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .sidebar-header {
+        padding-bottom: 0.8rem;
+      }
+      
+      .main-content {
+        flex-direction: column;
+      }
+      
+      #map {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">🌎</span>
+        GeoAnalytics Studio
+      </div>
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-box" placeholder="Search for places, coordinates..." id="searchInput">
+      </div>
+    </div>
+    <div class="header-icons">
+      <button class="icon-btn" title="Layers" id="layersBtn">
+        <i>🎨</i>
+      </button>
+      <button class="icon-btn" title="Analysis" id="analysisBtn">
+        <i>📊</i>
+      </button>
+      <div class="language-switcher">
+        <button class="language-option active" data-lang="en">EN</button>
+        <button class="language-option" data-lang="ar">AR</button>
+      </div>
+      <button class="icon-btn" title="Account">
+        <i>👤</i>
+      </button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="main-content">
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">
+            <i>🎨</i> Map Layers
+          </div>
+          <button class="close-sidebar" id="closeSidebar">×</button>
+        </div>
+        <div class="layer-list">
+          <div class="layer-item active">
+            <div class="layer-info">
+              <div class="layer-name">Satellite Imagery</div>
+              <div class="layer-status"></div>
+            </div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-info">
+              <div class="layer-name">Topographic Map</div>
+              <div class="layer-status inactive"></div>
+            </div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-info">
+              <div class="layer-name">Street Map</div>
+              <div class="layer-status inactive"></div>
+            </div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-info">
+              <div class="layer-name">Terrain 3D</div>
+              <div class="layer-status inactive"></div>
+            </div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-info">
+              <div class="layer-name">Weather Overlay</div>
+              <div class="layer-status inactive"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="analysis-panel">
+          <div class="panel-title">
+            <i>🔬</i> Spatial Analysis
+          </div>
+          <div class="analysis-content">
+            Click on any location to perform advanced geospatial analysis using AI-powered algorithms.
+          </div>
+          <div class="data-grid">
+            <div class="data-item">
+              <div class="data-label">Elevation</div>
+              <div class="data-value">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Distance to Coast</div>
+              <div class="data-value">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Climate Zone</div>
+              <div class="data-value">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Land Use</div>
+              <div class="data-value">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <div class="compass">N</div>
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="zoomIn">+</button>
+    <button class="zoom-btn" id="zoomOut">-</button>
+  </div>
+  <button class="fullscreen-btn" id="fullscreenBtn">⛶</button>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Language translations
+    const translations = {
+      en: {
+        title: "GeoAnalytics Studio",
+        searchPlaceholder: "Search for places, coordinates...",
+        mapLayers: "Map Layers",
+        spatialAnalysis: "Spatial Analysis",
+        clickAnalysis: "Click on any location to perform advanced geospatial analysis using AI-powered algorithms.",
+        elevation: "Elevation",
+        distanceToCoast: "Distance to Coast",
+        climateZone: "Climate Zone",
+        landUse: "Land Use",
+        coordinates: "Coordinates",
+        altitude: "Altitude",
+        timezone: "Timezone",
+        environmentalAnalysis: "Environmental Analysis",
+        climate: "Climate",
+        vegetation: "Vegetation",
+        waterResources: "Water Resources",
+        soilType: "Soil Type",
+        environmentalHazards: "Environmental Hazards",
+        geographicalInfo: "Geographical Information",
+        location: "Location",
+        country: "Country",
+        scientificAnalysis: "Scientific Analysis",
+        estimatedTemperature: "Estimated Temperature",
+        relativeHumidity: "Relative Humidity",
+        sunlightExposure: "Sunlight Exposure",
+        windSpeed: "Wind Speed",
+        analysisComplete: "Analysis completed at",
+        close: "Close",
+        layers: "Layers",
+        analysis: "Analysis",
+        account: "Account"
+      },
+      ar: {
+        title: "ستوديو التحليل الجغرافي",
+        searchPlaceholder: "ابحث عن أماكن، إحداثيات...",
+        mapLayers: "طبقات الخريطة",
+        spatialAnalysis: "التحليل المكاني",
+        clickAnalysis: "انقر على أي موقع لأداء تحليل جغرافي متقدم باستخدام خوارزميات الذكاء الاصطناعي.",
+        elevation: "الارتفاع",
+        distanceToCoast: "المسافة من الساحل",
+        climateZone: "المنطقة المناخية",
+        landUse: "استخدامات الأراضي",
+        coordinates: "الإحداثيات",
+        altitude: "الارتفاع",
+        timezone: "المنطقة الزمنية",
+        environmentalAnalysis: "التحليل البيئي",
+        climate: "المناخ",
+        vegetation: "الغطاء النباتي",
+        waterResources: "الموارد المائية",
+        soilType: "نوع التربة",
+        environmentalHazards: "المخاطر البيئية",
+        geographicalInfo: "المعلومات الجغرافية",
+        location: "الموقع",
+        country: "الدولة",
+        scientificAnalysis: "التحليل العلمي",
+        estimatedTemperature: "درجة الحرارة المقدرة",
+        relativeHumidity: "الرطوبة النسبية",
+        sunlightExposure: "التعرض للشمس",
+        windSpeed: "سرعة الرياح",
+        analysisComplete: "اكتمل التحليل في",
+        close: "إغلاق",
+        layers: "الطبقات",
+        analysis: "التحليل",
+        account: "الحساب"
+      }
+    };
+
+    // Current language
+    let currentLang = 'en';
+
+    // Function to update language
+    function updateLanguage(lang) {
+      currentLang = lang;
+      document.querySelector('title').textContent = translations[lang].title;
+      document.querySelector('.logo').innerHTML = `<span class="logo-icon">🌎</span> ${translations[lang].title}`;
+      document.getElementById('searchInput').placeholder = translations[lang].searchPlaceholder;
+      document.querySelector('.sidebar-title').innerHTML = `<i>🎨</i> ${translations[lang].mapLayers}`;
+      document.querySelector('.panel-title').innerHTML = `<i>🔬</i> ${translations[lang].spatialAnalysis}`;
+      document.querySelector('.analysis-content').textContent = translations[lang].clickAnalysis;
+      
+      // Update data labels
+      document.querySelector('.data-grid .data-item:nth-child(1) .data-label').textContent = translations[lang].elevation;
+      document.querySelector('.data-grid .data-item:nth-child(2) .data-label').textContent = translations[lang].distanceToCoast;
+      document.querySelector('.data-grid .data-item:nth-child(3) .data-label').textContent = translations[lang].climateZone;
+      document.querySelector('.data-grid .data-item:nth-child(4) .data-label').textContent = translations[lang].landUse;
+
+      // Update header tooltips
+      document.getElementById('layersBtn').title = translations[lang].layers;
+      document.getElementById('analysisBtn').title = translations[lang].analysis;
+      document.querySelector('[title="Account"]').title = translations[lang].account;
+    }
+
+    // Initialize language
+    updateLanguage('en');
+
+    // Language switcher event listeners
+    document.querySelectorAll('.language-option').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.language-option').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        updateLanguage(this.dataset.lang);
+      });
+    });
+
+    // تهيئة الخريطة
+    const map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+      center: [31.7917, -7.0926],
+      zoom: 6,
+      maxZoom: 19,
+      minZoom: 3
+    });
+
+    // إضافة طبقات الخرائط المختلفة
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    });
+
+    const terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17
+    });
+
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    });
+
+    // جعل الطبقة الجوية هي الافتراضية
+    satelliteLayer.addTo(map);
+
+    // التحكم في الطبقات
+    const layers = {
+      "Satellite Imagery": satelliteLayer,
+      "Topographic Map": terrainLayer,
+      "Street Map": streetLayer
+    };
+
+    // إضافة عناصر التحكم
+    document.getElementById('zoomIn').addEventListener('click', () => {
+      map.zoomIn();
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', () => {
+      map.zoomOut();
+    });
+
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+    // Compass functionality
+    document.querySelector('.compass').addEventListener('click', () => {
+      map.setView([31.7917, -7.0926], 6);
+    });
+
+    // Sidebar toggle
+    document.getElementById('layersBtn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.add('open');
+    });
+
+    document.getElementById('closeSidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('open');
+    });
+
+    // Layer selection
+    document.querySelectorAll('.layer-item').forEach((item, index) => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.layer-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Remove all layers
+        Object.values(layers).forEach(layer => {
+          map.removeLayer(layer);
+        });
+        
+        // Add selected layer
+        const layerName = this.querySelector('.layer-name').textContent;
+        if (layers[layerName]) {
+          layers[layerName].addTo(map);
+        }
+      });
+    });
+
+    // متغيرات التحكم
+    let lastMarker = null;
+    let currentPopup = null;
+
+    // دالة لتحليل البيانات البيئية بناءً على الارتفاع
+    function analyzeEnvironmentalConditions(elevation, lat, lng) {
+      const conditions = {
+        climate: '',
+        vegetation: '',
+        water: '',
+        soil: '',
+        hazards: []
+      };
+
+      // تحليل المناخ حسب الارتفاع وخط العرض
+      if (elevation < 100) {
+        if (lat > 30) {
+          conditions.climate = currentLang === 'en' ? 'Temperate coastal climate' : 'مناخ متوسط ساحلي';
+        } else {
+          conditions.climate = currentLang === 'en' ? 'Tropical coastal climate' : 'مناخ استوائي ساحلي';
+        }
+      } else if (elevation < 500) {
+        conditions.climate = currentLang === 'en' ? 'Moderate climate' : 'مناخ معتدل';
+      } else if (elevation < 1500) {
+        conditions.climate = currentLang === 'en' ? 'Cool moderate climate' : 'مناخ بارد معتدل';
+      } else {
+        conditions.climate = currentLang === 'en' ? 'Cold mountain climate' : 'مناخ جبلي بارد';
+      }
+
+      // تحليل الغطاء النباتي
+      if (elevation < 200) {
+        conditions.vegetation = currentLang === 'en' ? 'Agricultural lands and plains' : 'أراضي زراعية وسهول';
+      } else if (elevation < 800) {
+        conditions.vegetation = currentLang === 'en' ? 'Moderate forests' : 'غابات معتدلة';
+      } else if (elevation < 1500) {
+        conditions.vegetation = currentLang === 'en' ? 'Mountain forests' : 'غابات جبلية';
+      } else {
+        conditions.vegetation = currentLang === 'en' ? 'Rocky areas and permanent snow' : 'أراضي صخرية وثلوج دائمة';
+      }
+
+      // تحليل الموارد المائية
+      if (elevation > 1000) {
+        conditions.water = currentLang === 'en' ? 'Main source of groundwater' : 'مصدر رئيسي للمياه الجوفية';
+      } else if (elevation > 500) {
+        conditions.water = currentLang === 'en' ? 'Seasonal mountain streams' : 'جداول جبلية موسمية';
+      } else {
+        conditions.water = currentLang === 'en' ? 'Surface water sources' : 'مصادر مائية سطحية';
+      }
+
+      // تحليل التربة
+      if (elevation < 300) {
+        conditions.soil = currentLang === 'en' ? 'Fertile soil suitable for agriculture' : 'تربة خصبة مناسبة للزراعة';
+      } else if (elevation < 800) {
+        conditions.soil = currentLang === 'en' ? 'Moderately fertile soil' : 'تربة متوسطة الخصوبة';
+      } else {
+        conditions.soil = currentLang === 'en' ? 'Rocky soil with low fertility' : 'تربة صخرية ضعيفة الخصوبة';
+      }
+
+      // تحديد المخاطر المحتملة
+      if (elevation > 1500 && lat > 30) {
+        conditions.hazards.push(currentLang === 'en' ? 'Snow avalanches' : 'انزلاقات ثلجية');
+      }
+      if (elevation < 50 && lng < 0) {
+        conditions.hazards.push(currentLang === 'en' ? 'Coastal floods' : 'فيضانات ساحلية');
+      }
+      if (elevation > 1000) {
+        conditions.hazards.push(currentLang === 'en' ? 'Difficult access' : 'صعوبة الوصول');
+      }
+
+      return conditions;
+    }
+
+    // دالة حساب المسافة من البحر
+    function calculateDistanceToCoast(lat, lng) {
+      // هذه الإحداثيات تمثل بعض النقاط الساحلية الرئيسية في المغرب
+      const coastPoints = [
+        [35.7744, -3.8657], // طنجة
+        [34.0388, -6.8199], // الدار البيضاء
+        [32.2983, -9.2333], // أكادير
+        [27.9861, -15.6894] // العيون
+      ];
+
+      let minDistance = Infinity;
+      
+      coastPoints.forEach(point => {
+        const R = 6371; // نصف قطر الأرض بالكيلومتر
+        const dLat = (point[0] - lat) * Math.PI / 180;
+        const dLon = (point[1] - lng) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat * Math.PI / 180) * Math.cos(point[0] * Math.PI / 180) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+        }
+      });
+
+      return minDistance;
+    }
+
+    // وظيفة تحليل البيانات عند النقر
+    map.on('click', async function (e) {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      const latNum = parseFloat(lat);
+      const lngNum = parseFloat(lng);
+
+      // إغلاق النافذة المنبثقة الحالية إذا كانت مفتوحة
+      if (currentPopup) {
+        map.closePopup(currentPopup);
+        currentPopup = null;
+      }
+
+      // إزالة العلامة القديمة إذا وجدت
+      if (lastMarker) {
+        map.removeLayer(lastMarker);
+      }
+
+      // إنشاء علامة جديدة
+      lastMarker = L.marker(e.latlng, {
+        icon: L.divIcon({
+          className: 'map-marker',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
+        })
+      }).addTo(map);
+
+      // محتوى الفقاعة مع شاشة التحميل
+      const popup = L.popup({
+        minWidth: 450,
+        maxWidth: 550,
+        autoClose: false,
+        closeOnClick: false
+      })
+        .setLatLng(e.latlng)
+        .setContent(`
+          <div class="popup-container">
+            <div class="popup-header">
+              <div class="popup-title">🔬 ${currentLang === 'en' ? 'Geospatial Analysis' : 'التحليل الجغرافي'}</div>
+              <div class="popup-subtitle">${currentLang === 'en' ? 'AI-powered spatial intelligence' : 'ذكاء مكاني مدعوم بالذكاء الاصطناعي'}</div>
+            </div>
+            <div class="popup-body">
+              <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>${currentLang === 'en' ? 'Analyzing geospatial data with AI algorithms...' : 'جاري تحليل البيانات الجغرافية باستخدام خوارزميات الذكاء الاصطناعي...'}</div>
+              </div>
+            </div>
+            <div class="popup-footer">
+              <div>${currentLang === 'en' ? 'Real-time analysis' : 'تحليل في الوقت الحقيقي'}</div>
+              <div class="action-buttons">
+                <button class="btn btn-outline">${currentLang === 'en' ? 'Close' : 'إغلاق'}</button>
+              </div>
+            </div>
+          </div>
+        `)
+        .openOn(map);
+
+      // تحديث المرجع للنافذة المنبثقة الحالية
+      currentPopup = popup;
+
+      // محاكاة الاتصال بالخادم مع تأخير
+      setTimeout(async () => {
+        try {
+          // استخدام بيانات وهمية للارتفاع (بديل لـ elevation API)
+          const elevation = Math.random() * 2000; // قيمة وهمية للارتفاع
+          const distanceToCoast = calculateDistanceToCoast(latNum, lngNum);
+          const conditions = analyzeEnvironmentalConditions(elevation, latNum, lngNum);
+
+          // تحديث لوحة التحليل الجانبي
+          document.querySelector('.data-grid .data-item:nth-child(1) .data-value').textContent = `${elevation.toFixed(2)} m`;
+          document.querySelector('.data-grid .data-item:nth-child(2) .data-value').textContent = `${distanceToCoast.toFixed(2)} km`;
+          document.querySelector('.data-grid .data-item:nth-child(3) .data-value').textContent = conditions.climate;
+          document.querySelector('.data-grid .data-item:nth-child(4) .data-value').textContent = conditions.vegetation;
+
+          // بناء المحتوى
+          let popupContent = `
+            <div class="popup-container">
+              <div class="popup-header">
+                <div class="popup-title">🔬 ${currentLang === 'en' ? 'Geospatial Analysis' : 'التحليل الجغرافي'}</div>
+                <div class="popup-subtitle">${currentLang === 'en' ? 'AI-powered spatial intelligence' : 'ذكاء مكاني مدعوم بالذكاء الاصطناعي'}</div>
+              </div>
+              <div class="popup-body">
+                <div class="data-section">
+                  <div class="section-title">📍 ${currentLang === 'en' ? 'Basic Geospatial Coordinates' : 'الإحداثيات الجغرافية الأساسية'}</div>
+                  <div class="coordinates">
+                    <div class="coord-item">${currentLang === 'en' ? 'Latitude' : 'خط العرض'}: <b>${lat}</b></div>
+                    <div class="coord-item">${currentLang === 'en' ? 'Longitude' : 'خط الطول'}: <b>${lng}</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">⛰️ ${currentLang === 'en' ? 'Altitude' : 'الارتفاع'}</div>
+                    <div class="data-value-detailed"><b>${elevation.toFixed(2)} m</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">🌊 ${currentLang === 'en' ? 'Distance to Coast' : 'المسافة من الساحل'}</div>
+                    <div class="data-value-detailed"><b>${distanceToCoast.toFixed(2)} km</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">⏰ ${currentLang === 'en' ? 'Timezone' : 'المنطقة الزمنية'}</div>
+                    <div class="data-value-detailed"><b>Africa/Casablanca</b><br/>
+                    ${currentLang === 'en' ? 'Time' : 'الوقت'}: ${new Date().toLocaleTimeString('en-US')}<br/>
+                    ${currentLang === 'en' ? 'Date' : 'التاريخ'}: ${new Date().toLocaleDateString('en-US')}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="data-section">
+                  <div class="section-title">🌿 ${currentLang === 'en' ? 'Environmental Analysis' : 'التحليل البيئي'}</div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">🌤️ ${currentLang === 'en' ? 'Climate' : 'المناخ'}</div>
+                    <div class="data-value-detailed"><b>${conditions.climate}</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">🌳 ${currentLang === 'en' ? 'Vegetation' : 'الغطاء النباتي'}</div>
+                    <div class="data-value-detailed"><b>${conditions.vegetation}</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">💧 ${currentLang === 'en' ? 'Water Resources' : 'الموارد المائية'}</div>
+                    <div class="data-value-detailed"><b>${conditions.water}</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">🌱 ${currentLang === 'en' ? 'Soil Type' : 'نوع التربة'}</div>
+                    <div class="data-value-detailed"><b>${conditions.soil}</b></div>
+                  </div>
+          `;
+
+          if (conditions.hazards.length > 0) {
+            popupContent += `
+              <div class="data-item-detailed">
+                <div class="data-label-detailed">⚠️ ${currentLang === 'en' ? 'Environmental Hazards' : 'المخاطر البيئية'}</div>
+                <div class="data-value-detailed">
+                  ${conditions.hazards.map(hazard => `• ${hazard}`).join('<br>')}
+                </div>
+              </div>
+            `;
+          }
+
+          popupContent += `
+                </div>
+
+                <div class="data-section">
+                  <div class="section-title">🌍 ${currentLang === 'en' ? 'Geographical Information' : 'المعلومات الجغرافية'}</div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">📌 ${currentLang === 'en' ? 'Location' : 'الموقع'}</div>
+                    <div class="data-value-detailed"><b>${currentLang === 'en' ? 'Unknown Location, Morocco' : 'موقع غير معروف، المغرب'}</b></div>
+                  </div>
+                  <div class="data-item-detailed">
+                    <div class="data-label-detailed">🌐 ${currentLang === 'en' ? 'Country' : 'الدولة'}</div>
+                    <div class="data-value-detailed"><b>${currentLang === 'en' ? 'Morocco' : 'المغرب'}</b></div>
+                  </div>
+                </div>
+
+                <div class="data-section">
+                  <div class="section-title">📊 ${currentLang === 'en' ? 'Scientific Analysis' : 'التحليل العلمي'}</div>
+                  <div class="scientific-tools">
+                    <div class="tool-card">
+                      <div class="tool-title">${currentLang === 'en' ? 'Estimated Temperature' : 'درجة الحرارة المقدرة'}</div>
+                      <div class="tool-value">${(25 - (elevation/100)).toFixed(1)}</div>
+                      <div class="tool-value" style="font-size: 0.8rem;">°C</div>
+                    </div>
+                    <div class="tool-card">
+                      <div class="tool-title">${currentLang === 'en' ? 'Relative Humidity' : 'الرطوبة النسبية'}</div>
+                      <div class="tool-value">${Math.floor(70 - (distanceToCoast/10))}</div>
+                      <div class="tool-value" style="font-size: 0.8rem;">%</div>
+                    </div>
+                    <div class="tool-card">
+                      <div class="tool-title">${currentLang === 'en' ? 'Sunlight Exposure' : 'التعرض للشمس'}</div>
+                      <div class="tool-value">${Math.floor(8 - (elevation/500))}</div>
+                      <div class="tool-value" style="font-size: 0.8rem;">${currentLang === 'en' ? 'hrs/day' : 'ساعة/يوم'}</div>
+                    </div>
+                    <div class="tool-card">
+                      <div class="tool-title">${currentLang === 'en' ? 'Wind Speed' : 'سرعة الرياح'}</div>
+                      <div class="tool-value">${Math.floor(15 + (elevation/100))}</div>
+                      <div class="tool-value" style="font-size: 0.8rem;">${currentLang === 'en' ? 'km/h' : 'كم/س'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="popup-footer">
+                <div>${currentLang === 'en' ? 'Analysis completed at' : 'اكتمل التحليل في'} ${new Date().toLocaleString('en-US')}</div>
+                <div class="action-buttons">
+                  <button class="btn btn-outline">${currentLang === 'en' ? 'Close' : 'إغلاق'}</button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          popup.setContent(popupContent);
+
+          // إضافة وظيفة الإغلاق
+          popup.getElement().querySelector('.btn-outline').addEventListener('click', () => {
+            map.closePopup();
+          });
+
+        } catch (error) {
+          console.error("Error:", error);
+          popup.setContent(`
+            <div class="popup-container">
+              <div class="popup-header">
+                <div class="popup-title">❌ ${currentLang === 'en' ? 'Analysis Error' : 'خطأ في التحليل'}</div>
+              </div>
+              <div class="popup-body">
+                <div class="error">
+                  ${currentLang === 'en' ? 'Failed to complete geospatial analysis for this location.' : 'فشل إكمال التحليل الجغرافي لهذا الموقع.'}<br/>
+                  ${currentLang === 'en' ? 'Please try another location.' : 'يرجى تجربة موقع آخر.'}
+                </div>
+              </div>
+              <div class="popup-footer">
+                <div>${currentLang === 'en' ? 'Real-time analysis' : 'تحليل في الوقت الحقيقي'}</div>
+                <div class="action-buttons">
+                  <button class="btn btn-outline">${currentLang === 'en' ? 'Close' : 'إغلاق'}</button>
+                </div>
+              </div>
+            </div>
+          `);
+
+          popup.getElement().querySelector('.btn-outline').addEventListener('click', () => {
+            map.closePopup();
+          });
+        }
+      }, 1500); // تأخير لمحاكاة وقت المعالجة
+    });
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const query = this.value.trim();
+        if (query) {
+          // محاكاة البحث
+          alert(`${currentLang === 'en' ? 'Search functionality would locate:' : 'ستقوم وظيفة البحث بتحديد موقع:'} ${query}`);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
