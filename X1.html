@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Open Satellite Map — False color, IR, indices</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-sA+e2GPrQvZkG1QY1lCjm8hG2lYg2KpE5q5d1vCJwGk0CwTHuQmSsw2rgegw8N2kT8Gf6f1o2RyKqVQ4Sg8gIA=="
+    crossorigin=""
+  />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; }
+    .ui {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 12px; border-radius: 8px;
+      max-width: 360px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); font: 14px/1.3 system-ui, Arial, sans-serif;
+    }
+    .ui h3 { margin: 0 0 8px; font-size: 16px; }
+    .row { margin-bottom: 8px; }
+    .row label { display: block; font-weight: 600; margin-bottom: 4px; }
+    .row input[type="text"], .row input[type="date"], .row select {
+      width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .inline > * { flex: 1; }
+    .small { font-size: 12px; color: #444; }
+    .btn {
+      display: inline-block; background: #1e88e5; color: #fff; border: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer;
+    }
+    .btn.secondary { background: #6c757d; }
+    .layers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-top: 6px; }
+    .legend {
+      position: absolute; bottom: 12px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      min-width: 160px; max-width: 260px; font: 12px/1.3 system-ui, Arial, sans-serif;
+    }
+    .legend .bar {
+      height: 10px; background: linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725); border-radius: 4px; margin: 6px 0;
+    }
+    .legend .bar.ndwi {
+      background: linear-gradient(90deg, #30123b, #414487, #2a788e, #22a884, #7ad151, #fde725);
+    }
+    .legend .bar.ndsi {
+      background: linear-gradient(90deg, #2b83ba, #abdda4, #ffffbf, #fdae61, #d7191c);
+    }
+    .legend .bar.thermal {
+      background: linear-gradient(90deg, #000004, #420a68, #932667, #dd513a, #fca50a, #f6d746);
+    }
+    .legend .ticks { display: flex; justify-content: space-between; }
+    .status {
+      position: absolute; bottom: 12px; right: 10px; z-index: 1000;
+      background: rgba(0,0,0,0.75); color: #fff; padding: 8px 10px; border-radius: 8px; font: 12px/1.2 system-ui, Arial, sans-serif;
+      max-width: 320px;
+    }
+    .attribution {
+      position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-size: 11px; background: rgba(255,255,255,0.6);
+      padding: 2px 6px; z-index: 400;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="ui">
+    <h3>Open Satellite Map</h3>
+    <div class="row inline">
+      <input id="searchBox" type="text" placeholder="Search a place (Photon/Nominatim)" />
+      <button class="btn" id="searchBtn" title="Search">Search</button>
+    </div>
+    <div class="row small">Or click on the map to pick a location. Nothing loads until you do.</div>
+
+    <div class="row inline">
+      <div>
+        <label for="dataset">Dataset</label>
+        <select id="dataset">
+          <option value="s2">Sentinel‑2 L2A (10m)</option>
+          <option value="l89">Landsat 8/9 L2 (30m + thermal)</option>
+        </select>
+      </div>
+      <div>
+        <label for="cloud">Cloud cover ≤ <span id="cloudVal">20</span>%</label>
+        <input id="cloud" type="range" min="0" max="90" step="5" value="20" />
+      </div>
+    </div>
+
+    <div class="row inline">
+      <div>
+        <label for="start">Start date</label>
+        <input id="start" type="date" />
+      </div>
+      <div>
+        <label for="end">End date</label>
+        <input id="end" type="date" />
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="updateBtn">Update imagery here</button>
+      <button class="btn secondary" id="clearBtn">Clear</button>
+    </div>
+
+    <div class="row">
+      <label>Layers</label>
+      <div class="layers">
+        <label><input type="checkbox" class="layerToggle" value="truecolor" checked /> True color</label>
+        <label><input type="checkbox" class="layerToggle" value="cir" /> False color IR</label>
+        <label><input type="checkbox" class="layerToggle" value="swir" /> SWIR false color</label>
+        <label><input type="checkbox" class="layerToggle" value="ndvi" /> NDVI</label>
+        <label><input type="checkbox" class="layerToggle" value="ndwi" /> NDWI</label>
+        <label><input type="checkbox" class="layerToggle" value="ndsi" /> NDSI</label>
+        <label title="Landsat only"><input type="checkbox" class="layerToggle" value="thermal" /> Thermal (L8/9)</label>
+        <label><input type="checkbox" class="layerToggle" value="hillshade" /> Hillshade</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="opacity">Overlay opacity: <span id="opacityVal">100</span>%</label>
+      <input id="opacity" type="range" min="10" max="100" step="5" value="100" />
+    </div>
+  </div>
+
+  <div class="legend" id="legend" style="display:none">
+    <div id="legendTitle" style="font-weight:600;margin-bottom:4px;">Legend</div>
+    <div class="bar" id="legendBar"></div>
+    <div class="ticks small" id="legendTicks">
+      <span>-1.0</span><span>0</span><span>+1.0</span>
+    </div>
+  </div>
+
+  <div class="status" id="status" style="display:none"></div>
+
+  <div class="attribution">
+    © OpenStreetMap contributors · ESA Copernicus Sentinel‑2 · USGS/NASA Landsat · Hillshade © Wikimedia
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha512-vI8o6PHwWfC8+3vO4Y9R5S6tK6jV5QyfdKM6m1hZ9aAURKUrW3C7ZpAq9h9n/9NHRY5+YdZ0l3SXoA5pP6s3wQ=="
+    crossorigin=""
+  ></script>
+  <script>
+    // ✅ Fixed: Removed trailing spaces in URLs
+    const CONFIG = {
+      stacBase: 'https://planetarycomputer.microsoft.com/api/stac/v1',
+      titilerBase: 'https://planetarycomputer.microsoft.com/api/data/v1',
+      photon: 'https://photon.komoot.io/api/',
+      hillshade: 'https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png',
+    };
+
+    let picked = null;
+    let activeItem = null;
+    let layers = {};
+    let overlayKeys = ['truecolor','cir','swir','ndvi','ndwi','ndsi','thermal'];
+    let currentDataset = 's2';
+
+    const map = L.map('map').setView([30.42, -9.6], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const hillshade = L.tileLayer(CONFIG.hillshade, {
+      maxZoom: 16,
+      opacity: 0.6,
+      attribution: 'Hillshade © Wikimedia'
+    });
+
+    const searchBox = document.getElementById('searchBox');
+    const searchBtn = document.getElementById('searchBtn');
+    const datasetSel = document.getElementById('dataset');
+    const cloudRange = document.getElementById('cloud');
+    const cloudVal = document.getElementById('cloudVal');
+    const startInput = document.getElementById('start');
+    const endInput = document.getElementById('end');
+    const updateBtn = document.getElementById('updateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const opacityRange = document.getElementById('opacity');
+    const opacityVal = document.getElementById('opacityVal');
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legendTitle');
+    const legendBar = document.getElementById('legendBar');
+    const legendTicks = document.getElementById('legendTicks');
+    const status = document.getElementById('status');
+
+    const today = new Date();
+    const endISO = today.toISOString().slice(0,10);
+    const start = new Date(today.getTime() - 90*24*3600*1000);
+    const startISO = start.toISOString().slice(0,10);
+    startInput.value = startISO;
+    endInput.value = endISO;
+
+    cloudRange.addEventListener('input', () => cloudVal.textContent = cloudRange.value);
+    opacityRange.addEventListener('input', () => {
+      opacityVal.textContent = opacityRange.value;
+      setOverlayOpacity(parseInt(opacityRange.value,10)/100);
+    });
+    datasetSel.addEventListener('change', () => {
+      currentDataset = datasetSel.value;
+      toggleThermalVisibility();
+    });
+
+    document.querySelectorAll('.layerToggle').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const key = e.target.value;
+        if (key === 'hillshade') {
+          if (e.target.checked) hillshade.addTo(map); else map.removeLayer(hillshade);
+          return;
+        }
+        if (!activeItem) {
+          toast("Pick a location and Update imagery first.");
+          e.target.checked = false;
+          return;
+        }
+        ensureLayer(key);
+        if (e.target.checked) layers[key].addTo(map); else map.removeLayer(layers[key]);
+        updateLegend(key);
+      });
+    });
+
+    map.on('click', (e) => {
+      picked = e.latlng;
+      L.marker(picked, { title: 'Picked location' }).addTo(map);
+      toast('Location picked. Click “Update imagery here” to load.');
+    });
+
+    map.on('mousedown', (e) => {
+      if (e.originalEvent.altKey && activeItem) {
+        inspectPixel(e.latlng);
+      }
+    });
+
+    searchBtn.addEventListener('click', doSearch);
+    searchBox.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+    async function doSearch() {
+      const q = (searchBox.value || '').trim();
+      if (!q) return;
+      toast('Searching…');
+      try {
+        const url = new URL(CONFIG.photon);
+        url.searchParams.set('q', q);
+        url.searchParams.set('limit', '5');
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        if (!data || !data.features || !data.features.length) {
+          toast('No results.');
+          return;
+        }
+        const f = data.features[0];
+        const [lng, lat] = f.geometry.coordinates;
+        picked = { lat, lng };
+        map.flyTo([lat, lng], 11);
+        L.marker(picked, { title: f.properties.name || q }).addTo(map);
+        toast(`Picked: ${f.properties.name || q}. Click “Update imagery here”.`);
+      } catch (err) {
+        console.error(err);
+        toast('Search error.');
+      }
+    }
+
+    updateBtn.addEventListener('click', async () => {
+      if (!picked) {
+        toast('Pick a location (click the map or search) first.');
+        return;
+      }
+      await loadImagery();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      picked = null;
+      activeItem = null;
+      Object.values(layers).forEach(l => map.removeLayer(l));
+      layers = {};
+      legend.style.display = 'none';
+      toast('Cleared overlays.');
+    });
+
+    function toggleThermalVisibility() {
+      const thermalCB = [...document.querySelectorAll('.layerToggle')].find(el => el.value === 'thermal');
+      if (!thermalCB) return;
+      thermalCB.disabled = currentDataset !== 'l89';
+      if (currentDataset !== 'l89' && thermalCB.checked) {
+        thermalCB.checked = false;
+        if (layers['thermal']) map.removeLayer(layers['thermal']);
+      }
+    }
+
+    function setOverlayOpacity(op) {
+      overlayKeys.forEach(k => {
+        if (layers[k]) layers[k].setOpacity(op);
+      });
+    }
+
+    function updateLegend(key) {
+      const idLegends = {
+        ndvi: { title: 'NDVI (−1 to +1)', class: '', ticks: ['−1.0','0','+1.0'] },
+        ndwi: { title: 'NDWI (−1 to +1)', class: 'ndwi', ticks: ['−1.0','0','+1.0'] },
+        ndsi: { title: 'NDSI (−1 to +1)', class: 'ndsi', ticks: ['−1.0','0','+1.0'] },
+        thermal: { title: 'Thermal (K)', class: 'thermal', ticks: ['280','300','320'] }
+      };
+      if (!idLegends[key]) {
+        legend.style.display = 'none';
+        return;
+      }
+      legend.style.display = 'block';
+      legendTitle.textContent = idLegends[key].title;
+      legendBar.className = 'bar ' + idLegends[key].class;
+      legendTicks.innerHTML = idLegends[key].ticks.map(t => `<span>${t}</span>`).join('');
+    }
+
+    function toast(msg, ms = 3500) {
+      status.style.display = 'block';
+      status.textContent = msg;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => status.style.display = 'none', ms);
+    }
+
+    // ✅ Fixed: Correct collection names for Planetary Computer
+    async function loadImagery() {
+      try {
+        toast('Searching scenes…');
+        const cloud = parseInt(cloudRange.value, 10);
+        const start = startInput.value || startISO;
+        const end = endInput.value || endISO;
+        const point = picked;
+
+        const search = {
+          collections: currentDataset === 's2'
+            ? ['sentinel-2-l2a'] 
+            : ['landsat-c2-l2'], // ✅ Correct collection name
+          limit: 20,
+          intersects: { type: 'Point', coordinates: [point.lng, point.lat] },
+          datetime: `${start}T00:00:00Z/${end}T23:59:59Z`,
+          sortby: [{ field: 'properties.datetime', direction: 'desc' }],
+          query: { 'eo:cloud_cover': { lte: cloud } }
+        };
+
+        const res = await fetch(`${CONFIG.stacBase}/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(search)
+        });
+        if (!res.ok) throw new Error('STAC search failed');
+        const data = await res.json();
+        const items = data.features || [];
+        if (!items.length) {
+          toast('No scenes found. Relax cloud filter or expand dates.');
+          return;
+        }
+
+        const item = items[0];
+        activeItem = {
+          collection: item.collection,
+          id: item.id,
+          datetime: item.properties.datetime,
+          cloud: item.properties['eo:cloud_cover'],
+          bbox: item.bbox
+        };
+        toast(`Using ${activeItem.collection} scene on ${activeItem.datetime.slice(0,10)} (cloud ${Math.round(activeItem.cloud)}%).`);
+
+        document.querySelectorAll('.layerToggle').forEach(cb => {
+          if (cb.value === 'hillshade') return;
+          if (cb.checked) ensureLayer(cb.value, true);
+        });
+
+        if (activeItem.bbox) {
+          const b = activeItem.bbox;
+          const bounds = L.latLngBounds([[b[1], b[0]], [b[3], b[2]]]);
+          map.fitBounds(bounds.pad(0.1));
+        }
+      } catch (err) {
+        console.error(err);
+        toast('Error loading imagery.');
+      }
+    }
+
+    function ensureLayer(key, add = false) {
+      if (layers[key]) {
+        layers[key].setUrl(buildTileUrl(key));
+        return;
+      }
+      const url = buildTileUrl(key);
+      if (!url) return;
+
+      const opts = {
+        attribution: 'ESA Copernicus / USGS/NASA',
+        opacity: parseInt(opacityRange.value, 10) / 100,
+        maxNativeZoom: 12,
+        maxZoom: 18
+      };
+      const tl = L.tileLayer(url, opts);
+      layers[key] = tl;
+      if (add) tl.addTo(map);
+    }
+
+    // ✅ Fixed: Correct asset names and rescaling for Sentinel-2 and Landsat
+    function buildTileUrl(key) {
+      if (!activeItem) return '';
+      const base = `${CONFIG.titilerBase}/stac/tiles/{z}/{x}/{y}.png?collection=${encodeURIComponent(activeItem.collection)}&item=${encodeURIComponent(activeItem.id)}`;
+
+      if (activeItem.collection === 'sentinel-2-l2a') {
+        switch (key) {
+          case 'truecolor':
+            return `${base}&assets=B04,B03,B02&rescale=0,3000&colormap_name=`;
+          case 'cir':
+            return `${base}&assets=B08,B04,B03&rescale=0,3000&colormap_name=`;
+          case 'swir':
+            return `${base}&assets=B12,B11,B04&rescale=0,4000&colormap_name=`;
+          case 'ndvi':
+            return `${base}&expression=(B08-B04)/(B08+B04)&rescale=-1,1&colormap_name=viridis`;
+          case 'ndwi':
+            return `${base}&expression=(B03-B08)/(B03+B08)&rescale=-1,1&colormap_name=turbo`;
+          case 'ndsi':
+            return `${base}&expression=(B03-B11)/(B03+B11)&rescale=-1,1&colormap_name=ice`;
+          default:
+            return '';
+        }
+      } else if (activeItem.collection === 'landsat-c2-l2') {
+        switch (key) {
+          case 'truecolor':
+            return `${base}&assets=SR_B4,SR_B3,SR_B2&rescale=0,30000`;
+          case 'cir':
+            return `${base}&assets=SR_B5,SR_B4,SR_B3&rescale=0,30000`;
+          case 'swir':
+            return `${base}&assets=SR_B7,SR_B6,SR_B4&rescale=0,30000`;
+          case 'ndvi':
+            return `${base}&expression=(SR_B5-SR_B4)/(SR_B5+SR_B4)&rescale=-1,1&colormap_name=viridis`;
+          case 'ndwi':
+            return `${base}&expression=(SR_B3-SR_B5)/(SR_B3+SR_B5)&rescale=-1,1&colormap_name=turbo`;
+          case 'ndsi':
+            return `${base}&expression=(SR_B3-SR_B6)/(SR_B3+SR_B6)&rescale=-1,1&colormap_name=ice`;
+          case 'thermal':
+            return `${base}&assets=ST_B10&rescale=280,320&colormap_name=magma`;
+          default:
+            return '';
+        }
+      }
+      return '';
+    }
+
+    async function inspectPixel(latlng) {
+      try {
+        const visibleKeys = overlayKeys.filter(k => layers[k] && map.hasLayer(layers[k]));
+        if (!visibleKeys.length) {
+          toast('No overlay visible to inspect.');
+          return;
+        }
+
+        const assets = new Set();
+        const isS2 = activeItem.collection === 'sentinel-2-l2a';
+        const prefix = isS2 ? '' : 'SR_';
+
+        visibleKeys.forEach(k => {
+          if (k === 'truecolor') ['B4','B3','B2'].forEach(a => assets.add(prefix + a));
+          if (k === 'cir') ['B5','B4','B3'].forEach(a => assets.add(prefix + a));
+          if (k === 'swir') ['B7','B6','B4'].forEach(a => assets.add(prefix + a));
+          if (k === 'ndvi') ['B5','B4'].forEach(a => assets.add(prefix + a));
+          if (k === 'ndwi') ['B3','B5'].forEach(a => assets.add(prefix + a));
+          if (k === 'ndsi') ['B3','B6'].forEach(a => assets.add(prefix + a));
+          if (k === 'thermal') assets.add('ST_B10');
+        });
+
+        const params = new URLSearchParams({
+          collection: activeItem.collection,
+          item: activeItem.id,
+          lon: latlng.lng,
+          lat: latlng.lat,
+          assets: [...assets].join(',')
+        });
+
+        const url = `${CONFIG.titilerBase}/stac/point?${params}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Point query failed');
+        const data = await res.json();
+
+        const vals = data.values || {};
+        const lines = Object.entries(vals).map(([k, v]) => `${k}: ${fmt(v)}`);
+
+        if (isS2) {
+          if ('B08' in vals && 'B04' in vals) lines.push(`NDVI: ${fmt((vals.B08 - vals.B04) / (vals.B08 + vals.B04))}`);
+          if ('B03' in vals && 'B08' in vals) lines.push(`NDWI: ${fmt((vals.B03 - vals.B08) / (vals.B03 + vals.B08))}`);
+          if ('B03' in vals && 'B11' in vals) lines.push(`NDSI: ${fmt((vals.B03 - vals.B11) / (vals.B03 + vals.B11))}`);
+        } else {
+          if ('SR_B5' in vals && 'SR_B4' in vals) lines.push(`NDVI: ${fmt((vals.SR_B5 - vals.SR_B4) / (vals.SR_B5 + vals.SR_B4))}`);
+          if ('SR_B3' in vals && 'SR_B5' in vals) lines.push(`NDWI: ${fmt((vals.SR_B3 - vals.SR_B5) / (vals.SR_B3 + vals.SR_B5))}`);
+          if ('SR_B3' in vals && 'SR_B6' in vals) lines.push(`NDSI: ${fmt((vals.SR_B3 - vals.SR_B6) / (vals.SR_B3 + vals.SR_B6))}`);
+          if ('ST_B10' in vals) lines.push(`Thermal (K): ${fmt(vals.ST_B10)}`);
+        }
+
+        toast(`Pixel @ ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}\n${lines.join('\n')}`, 6000);
+      } catch (err) {
+        console.error(err);
+        toast('Inspect error (Alt+Click).');
+      }
+    }
+
+    function fmt(x) {
+      return typeof x === 'number' && isFinite(x) ? x.toFixed(3) : String(x);
+    }
+  </script>
+</body>
+</html>
