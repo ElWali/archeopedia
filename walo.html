@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wikipedia 3D Explorer</title>
+
+  <!-- Load React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+
+  <!-- React Three Fiber (R3F) -->
+  <script src="https://unpkg.com/@react-three/fiber@8.13.0/dist/react-three-fiber.umd.js"></script>
+
+  <!-- Drei (for OrbitControls, Text) -->
+  <script src="https://unpkg.com/@react-three/drei@9.76.12/dist/drei.umd.js"></script>
+
+  <style>
+    body { margin: 0; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    #root { width: 100%; height: 100vh; }
+    .input-container {
+      position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px;
+    }
+    input {
+      padding: 12px; width: 260px; border: none; border-radius: 6px; font-size: 16px; outline: none;
+    }
+    button {
+      padding: 10px; background: #00bfff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
+    }
+    button:hover { background: #0099cc; }
+    .suggestions {
+      margin-top: 4px; background: white; border-radius: 6px; max-height: 150px; overflow-y: auto;
+    }
+    .suggestions button {
+      width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; color: black; cursor: pointer;
+    }
+    .suggestions button:hover { background: #f0f0f0; }
+    .loading, .error {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.9); padding: 30px; border-radius: 12px; color: white;
+    }
+    .error button { margin-top: 10px; }
+    .panel {
+      position: absolute; bottom: 20px; left: 20px; width: 300px; max-height: 70vh; overflow-y: auto; background: rgba(0,0,0,0.9); color: white;
+      padding: 16px; border-radius: 12px; font-size: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .panel h3 { margin-bottom: 8px; }
+    .panel button {
+      float: right; background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+    const { Canvas, useFrame } = ReactThreeFiber;
+    const { OrbitControls, Text } = Drei;
+
+    function App() {
+      const [title, setTitle] = useState("Quantum_mechanics");
+      const [article, setArticle] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [suggestions, setSuggestions] = useState([]);
+      const [showSuggestions, setShowSuggestions] = useState(false);
+      const [selectedSection, setSelectedSection] = useState(null);
+
+      // Load article from Wikipedia
+      const loadArticle = () => {
+        if (!title.trim()) return;
+        setLoading(true);
+        setError(null);
+        setArticle(null);
+        setSelectedSection(null);
+
+        fetch(
+          `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(
+            title
+          )}&format=json&origin=*`
+        )
+          .then((res) => {
+            if (!res.ok) throw new Error("Network error");
+            return res.json();
+          })
+          .then((json) => {
+            if (json.error) throw new Error(json.error.info);
+
+            const parse = json.parse;
+            const summary = parse.text["*"]
+              .replace(/<[^>]+>/g, "")
+              .substring(0, 150) + "...";
+
+            const sections = parse.sections.map((sec) => ({
+              id: parseInt(sec.index),
+              title: sec.line.length > 20 ? sec.line.substring(0, 20) + "..." : sec.line,
+            }));
+
+            setArticle({ title: parse.title, summary, sections });
+          })
+          .catch((err) => {
+            setError(err.message || "Failed to load article");
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      };
+
+      // Load on mount
+      useEffect(() => {
+        loadArticle();
+      }, []);
+
+      // Fetch suggestions
+      useEffect(() => {
+        if (!title) {
+          setSuggestions([]);
+          return;
+        }
+        const timer = setTimeout(() => {
+          fetch(
+            `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
+              title
+            )}&limit=6&format=json&origin=*`
+          )
+            .then((res) => res.json())
+            .then((data) => setSuggestions(data[1]))
+            .catch(() => setSuggestions([]));
+        }, 500);
+
+        return () => clearTimeout(timer);
+      }, [title]);
+
+      // 3D Sphere with rotating text
+      function RotatingNode({ position, color, label, onClick }) {
+        const meshRef = useRef();
+        useFrame(() => {
+          if (meshRef.current) meshRef.current.rotation.y += 0.01;
+        });
+
+        return (
+          <mesh ref={meshRef} position={position} onClick={onClick}>
+            <sphereGeometry args={[0.7, 32, 32]} />
+            <meshStandardMaterial color={color} metalness={0.8} roughness={0.3} />
+            <Text
+              position={[0, 0, 0.9]}
+              fontSize={0.3}
+              color="black"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={0.05}
+              outlineColor="white"
+            >
+              {label}
+            </Text>
+          </mesh>
+        );
+      }
+
+      return (
+        <>
+          {/* Search Input */}
+          <div className="input-container">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter Wikipedia article"
+              onKeyPress={(e) => e.key === "Enter" && loadArticle()}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            />
+            <button onClick={loadArticle}>🔍 Search</button>
+
+            {/* Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="suggestions">
+                {suggestions.map((sugg) => (
+                  <button
+                    key={sugg}
+                    onClick={() => {
+                      setTitle(sugg);
+                      setShowSuggestions(false);
+                      loadArticle();
+                    }}
+                  >
+                    {sugg}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3D Canvas */}
+          {!loading && !error && article && (
+            <Canvas shadows camera={{ position: [0, 0, 10], fov: 50 }}>
+              <ambientLight intensity={0.4} />
+              <directionalLight
+                position={[5, 5, 5]}
+                intensity={1}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+              />
+              <OrbitControls enableZoom enablePan enableRotate dampingFactor={0.1} />
+
+              {/* Center Node - Article Title */}
+              <RotatingNode position={[0, 0, 0]} color="hotpink" label="🎯" />
+
+              {/* Section Nodes in Circle */}
+              {article.sections.slice(0, 8).map((sec, index) => {
+                const angle = (index / 8) * 2 * Math.PI;
+                const radius = 5;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                return (
+                  <RotatingNode
+                    key={sec.id}
+                    position={[x, 0, z]}
+                    color="#45b7d1"
+                    label={String(index + 1)}
+                    onClick={() => setSelectedSection(sec)}
+                  />
+                );
+              })}
+            </Canvas>
+          )}
+
+          {/* Loading Screen */}
+          {loading && (
+            <div className="loading">
+              <h2>🌀 Loading "{title}"...</h2>
+              <p>Fetching from Wikipedia...</p>
+            </div>
+          )}
+
+          {/* Error Screen */}
+          {error && !loading && (
+            <div className="error">
+              <h2>❌ Failed to Load</h2>
+              <p>{error}</p>
+              <button onClick={loadArticle}>Retry</button>
+            </div>
+          )}
+
+          {/* Info Panel */}
+          {selectedSection && (
+            <div className="panel">
+              <button onClick={() => setSelectedSection(null)}>✕</button>
+              <h3>Section</h3>
+              <p><strong>{selectedSection.title}</strong></p>
+              <small>Click to explore more (expandable in full version).</small>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Render App
+    const container = document.getElementById("root");
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+  </script>
+</body>
+</html>
