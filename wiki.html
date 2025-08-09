@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wikipedia 3D Explorer</title>
+
+  <!-- Load React, ReactDOM, Three.js, R3F, Drei -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/@react-three/fiber@8.13.0/dist/react-three-fiber.umd.js"></script>
+  <script src="https://unpkg.com/@react-three/drei@9.76.12/dist/drei.umd.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/maath@0.1.3/dist/maath.umd.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    #root {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+    .loading, .error {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      color: white;
+      text-align: center;
+    }
+    .spinner {
+      width: 64px;
+      height: 64px;
+      border: 4px solid #00bfff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    input, button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+    }
+    input {
+      width: 240px;
+      margin-right: 8px;
+    }
+    button {
+      background: #00bfff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0099cc;
+    }
+    .panel {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      width: 300px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .panel h3 {
+      margin-bottom: 8px;
+    }
+    .panel p {
+      line-height: 1.5;
+    }
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    .suggestions button {
+      width: 100%;
+      text-align: left;
+      padding: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .suggestions button:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const {
+      Canvas,
+      useFrame,
+      useThree,
+      extend,
+      useLoader,
+    } = ReactThreeFiber;
+    const {
+      OrbitControls,
+      Text3D,
+      Stars,
+      Html,
+    } = Drei;
+    const random = maath.random;
+
+    // Extend Three.js with custom geometries if needed
+    extend(THREE);
+
+    // ================================
+    // 🌟 App Component
+    // ================================
+    function Wikipedia3DLanding() {
+      const [articleTitle, setArticleTitle] = useState("Quantum_mechanics");
+      const [suggestions, setSuggestions] = useState([]);
+      const [showSuggestions, setShowSuggestions] = useState(false);
+      const [darkMode, setDarkMode] = useState(true);
+      const [selectedSection, setSelectedSection] = useState(null);
+      const [hoveredSection, setHoveredSection] = useState(null);
+      const [explodedAt, setExplodedAt] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [data, setData] = useState(null);
+      const [isListening, setIsListening] = useState(false);
+
+      // Load article
+      const loadArticle = async (title) => {
+        if (!title) return;
+        setLoading(true);
+        setError(null);
+        setSelectedSection(null);
+        setHoveredSection(null);
+
+        try {
+          const parseRes = await fetch(
+            `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(
+              title
+            )}&format=json&origin=*`
+          );
+          const parseJson = await parseRes.json();
+          if (parseJson.error) throw new Error(parseJson.error.info);
+
+          const parse = parseJson.parse;
+          const summary = parse.text["*"].replace(/<[^>]*>/g, "").slice(0, 300);
+
+          const sections = parse.sections.map((sec) => ({
+            id: parseInt(sec.index),
+            title: sec.line || "Untitled",
+            level: parseInt(sec.toclevel),
+            content: "",
+            words: 0,
+          }));
+
+          // Fetch links
+          const linkRes = await fetch(
+            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+              title
+            )}&prop=links&pllimit=10&format=json&origin=*`
+          );
+          const linkJson = await linkRes.json();
+          const pages = linkJson.query?.pages;
+          const page = Object.values(pages)[0];
+          const links = page.links?.map((l) => l.title) || [];
+
+          setData({
+            title: parse.title,
+            summary,
+            sections,
+            links,
+          });
+        } catch (err) {
+          setError(err.message || "Failed to load article");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Search suggestions
+      useEffect(() => {
+        if (!articleTitle) {
+          setSuggestions([]);
+          return;
+        }
+        const timer = setTimeout(async () => {
+          try {
+            const res = await fetch(
+              `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
+                articleTitle
+              )}&limit=6&format=json&origin=*`
+            );
+            const json = await res.json();
+            setSuggestions(json[1]);
+          } catch (e) {
+            console.error(e);
+          }
+        }, 300);
+        return () => clearTimeout(timer);
+      }, [articleTitle]);
+
+      // Voice Search
+      useEffect(() => {
+        let recognition;
+        if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+          return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          setArticleTitle(transcript);
+          loadArticle(transcript);
+        };
+
+        recognition.onend = () => setIsListening(false);
+
+        return () => {
+          if (recognition && isListening) recognition.stop();
+        };
+      }, [isListening]);
+
+      const startVoice = () => {
+        if (isListening) return;
+        setIsListening(true);
+        recognition.start();
+      };
+
+      const stopVoice = () => {
+        if (isListening) recognition.stop();
+      };
+
+      // Load on mount
+      useEffect(() => {
+        loadArticle(articleTitle);
+      }, []);
+
+      // Font loading fallback
+      const fontBold = useLoader(THREE.FontLoader, "https://threejs.org/examples/fonts/helvetiker_bold.typeface.json");
+      const fontReg = useLoader(THREE.FontLoader, "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json");
+
+      // ================================
+      // 🎮 3D Components
+      // ================================
+
+      const SectionNode = ({ section, position, isSelected, isHovered, onClick }) => {
+        const meshRef = useRef();
+        useFrame(() => {
+          if (meshRef.current) meshRef.current.rotation.y += 0.01;
+        });
+
+        const color = isSelected
+          ? "#ff6b6b"
+          : isHovered
+          ? "#4ecdc4"
+          : darkMode
+          ? "#45b7d1"
+          : "#2980b9";
+
+        return (
+          <group position={position} onClick={onClick} onPointerOver={() => setHoveredSection(section)} onPointerOut={() => setHoveredSection(null)}>
+            <mesh ref={meshRef} scale={isSelected ? 1.3 : 1}>
+              <sphereGeometry args={[0.8, 32, 32]} />
+              <meshStandardMaterial
+                color={color}
+                emissive={isHovered ? color : "black"}
+                emissiveIntensity={isHovered ? 0.5 : 0}
+                roughness={0.5}
+                metalness={0.8}
+              />
+            </mesh>
+            <Text3D
+              font={fontBold}
+              size={0.2}
+              height={0.1}
+              position={[0, -1.2, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+            >
+              {section.title.substring(0, 12)}...
+              <meshStandardMaterial color="#ffffff" />
+            </Text3D>
+          </group>
+        );
+      };
+
+      const ParticleExplosion = ({ position, active }) => {
+        const mesh = useRef();
+        const [positions] = useState(() => random.inSphere(new Float32Array(300), { radius: 1 }));
+        const velocities = useRef(random.inSphere(new Float32Array(300), { radius: 0.03 }));
+
+        useFrame(() => {
+          if (active && mesh.current) {
+            const pos = mesh.current.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) {
+              pos[i] += velocities.current[i];
+              pos[i + 1] += velocities.current[i + 1];
+              pos[i + 2] += velocities.current[i + 2];
+            }
+            mesh.current.attributes.position.needsUpdate = true;
+          }
+        });
+
+        return (
+          <points visible={active} position={position}>
+            <pointsMaterial color="#ffeb3b" size={0.05} transparent opacity={0.8} />
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                array={positions}
+                itemSize={3}
+                count={positions.length / 3}
+              />
+            </bufferGeometry>
+          </points>
+        );
+      };
+
+      const ConnectionLine = ({ start, end, color = "#bdc3c7" }) => {
+        const mid = [(start[0]+end[0])/2, Math.max(start[1],end[1])+1, (start[2]+end[2])/2];
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(...start),
+          new THREE.Vector3(...mid),
+          new THREE.Vector3(...end),
+        ]);
+        const geometry = new THREE.TubeGeometry(curve, 32, 0.015, 8);
+        return (
+          <mesh geometry={geometry}>
+            <meshStandardMaterial color={color} roughness={0.8} metalness={0.2} transparent opacity={0.5} />
+          </mesh>
+        );
+      };
+
+      const RelatedNode = ({ title, angle }) => {
+        const radius = 6;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        return (
+          <group position={[x, 0, z]}>
+            <mesh onClick={() => loadArticle(title)}>
+              <torusGeometry args={[0.4, 0.15, 16, 32]} />
+              <meshStandardMaterial color="#e67e22" emissive="#f39c12" emissiveIntensity={0.3} />
+            </mesh>
+            <Text3D font={fontReg} size={0.15} position={[0, -0.8, 0]}>
+              {title.substring(0, 10)}...
+              <meshStandardMaterial color="#f39c12" />
+            </Text3D>
+          </group>
+        );
+      };
+
+      // ================================
+      // 🖼️ Render
+      // ================================
+
+      return (
+        <>
+          {/* Header Input */}
+          <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 100 }}>
+            <div style={{ background: 'rgba(0,0,0,0.7)', padding: '12px', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={articleTitle}
+                    onChange={(e) => setArticleTitle(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    placeholder="Search Wikipedia"
+                  />
+                  {suggestions.length > 0 && showSuggestions && (
+                    <div className="suggestions">
+                      {suggestions.map((s) => (
+                        <button key={s} onClick={() => { setArticleTitle(s); loadArticle(s); }}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button onMouseDown={startVoice} onMouseUp={stopVoice}>
+                  🎤
+                </button>
+                <button onClick={() => setDarkMode(!darkMode)}>
+                  {darkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 3D Canvas */}
+          <Canvas shadows camera={{ position: [0, 2, 12], fov: 50 }}>
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+            <directionalLight position={[-10, -10, -5]} intensity={0.5} />
+            <OrbitControls enableDamping dampingFactor={0.05} rotateSpeed={0.5} />
+            {darkMode && <Stars radius={100} depth={50} count={2000} factor={4} saturation={0} fade />}
+
+            {data && (
+              <group>
+                {/* Main Node */}
+                <group position={[0, 0, 0]}>
+                  <mesh>
+                    <icosahedronGeometry args={[1.5, 1]} />
+                    <meshStandardMaterial color="#e17055" roughness={0.4} metalness={0.9} />
+                  </mesh>
+                  <Text3D font={fontBold} size={0.3} position={[0, 0, 1.8]}>
+                    {data.title.substring(0, 14)}...
+                    <meshStandardMaterial color="#ffffff" />
+                  </Text3D>
+                </group>
+
+                {/* Section Nodes */}
+                {data.sections.map((section, i) => {
+                  const angle = (i / data.sections.length) * Math.PI * 2;
+                  const radius = 4 + section.level * 0.5;
+                  const x = Math.cos(angle) * radius;
+                  const z = Math.sin(angle) * radius;
+                  const y = Math.sin(angle * 2) * 1.5;
+
+                  return (
+                    <React.Fragment key={section.id}>
+                      <SectionNode
+                        section={section}
+                        position={[x, y, z]}
+                        isSelected={selectedSection?.id === section.id}
+                        isHovered={hoveredSection?.id === section.id}
+                        onClick={() => {
+                          setExplodedAt([x, y, z]);
+                          setTimeout(() => setExplodedAt(null), 1000);
+                          setSelectedSection({ ...section, content: 'Click to load full section...' });
+                        }}
+                      />
+                      <ConnectionLine start={[0, 0, 0]} end={[x, y, z]} color="#00b894" />
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Related Articles */}
+                {data.links.slice(0, 6).map((title, i) => {
+                  const angle = (i / 6) * Math.PI * 2;
+                  return <RelatedNode key={title} title={title} angle={angle} />;
+                })}
+
+                {/* Explosion */}
+                {explodedAt && <ParticleExplosion position={explodedAt} active />}
+              </group>
+            )}
+          </Canvas>
+
+          {/* Info Panel */}
+          {selectedSection && (
+            <div className="panel">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3>{selectedSection.title}</h3>
+                <button onClick={() => setSelectedSection(null)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer' }}>✕</button>
+              </div>
+              <p>{selectedSection.content || "Click to load full content."}</p>
+              <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #333', fontSize: '12px', opacity: 0.7 }}>
+                Level {selectedSection.level} • {selectedSection.words || 0} words
+              </div>
+            </div>
+          )}
+
+          {/* Instructions */}
+          <div style={{ position: 'absolute', top: 120, right: 24, background: 'rgba(0,0,0,0.7)', padding: '12px', borderRadius: '8px', fontSize: '12px' }}>
+            <strong>🖱️ Click & drag</strong> to rotate<br/>
+            <strong>🔍 Scroll</strong> to zoom<br/>
+            <strong>🎤 Hold mic</strong> to speak<br/>
+            <strong>💡 Click nodes</strong> to explore
+          </div>
+
+          {/* Loading */}
+          {loading && (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Loading "{articleTitle}"...</p>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && !loading && (
+            <div className="error">
+              <p>{error}</p>
+              <button onClick={() => loadArticle(articleTitle)}>Retry</button>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Render
+    const App = () => <Wikipedia3DLanding />;
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
