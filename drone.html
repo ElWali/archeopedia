@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morocco Drone Radar - Real-time UAV Monitoring System</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #1565c0;
+            --primary-light: #5e92f3;
+            --primary-dark: #003c8f;
+            --secondary-color: #00838f;
+            --accent-color: #ff6f00;
+            --text-on-primary: #ffffff;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --background: #f5f7fa;
+            --surface: #ffffff;
+            --error: #d32f2f;
+            --success: #388e3c;
+            --warning: #f57c00;
+            --drone-color: #1565c0;
+            --no-fly-color: rgba(211, 47, 47, 0.3);
+            --restricted-color: rgba(245, 124, 0, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .header {
+            background-color: var(--primary-color);
+            color: var(--text-on-primary);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--error);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+        }
+        
+        .status-dot.connected {
+            background-color: var(--success);
+        }
+        
+        .status-dot.connecting {
+            background-color: var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background-color: var(--surface);
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 999;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        
+        .sidebar-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .stats-container {
+            margin-bottom: 24px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .stat-card {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title .material-icons {
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+        
+        .drones-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .drone-item {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .drone-item:hover {
+            background-color: #e3f2fd;
+            border-left-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+        
+        .drone-item.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .drone-item.danger {
+            border-left-color: var(--error);
+        }
+        
+        .drone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .drone-id {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 16px;
+        }
+        
+        .drone-type {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background-color: rgba(0,0,0,0.05);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        
+        .drone-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .drone-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+        
+        .drone-detail .material-icons {
+            font-size: 16px;
+            color: var(--primary-light);
+        }
+        
+        .battery-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .battery-bar {
+            width: 40px;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .battery-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .battery-fill.high {
+            background-color: var(--success);
+            width: 80%;
+        }
+        
+        .battery-fill.medium {
+            background-color: var(--warning);
+            width: 50%;
+        }
+        
+        .battery-fill.low {
+            background-color: var(--error);
+            width: 20%;
+        }
+        
+        .map-controls {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        
+        .map-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--surface);
+            color: var(--primary-color);
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .map-button:hover {
+            background-color: var(--primary-color);
+            color: var(--text-on-primary);
+            transform: scale(1.05);
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(21, 101, 192, 0.1);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 16px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .empty-state .material-icons {
+            font-size: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .empty-state-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .drone-icon {
+            background-color: var(--drone-color);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .drone-icon.warning {
+            background-color: var(--warning);
+        }
+        
+        .drone-icon.danger {
+            background-color: var(--error);
+        }
+        
+        .popup-content {
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .popup-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--primary-dark);
+        }
+        
+        .popup-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .popup-detail-label {
+            color: var(--text-secondary);
+        }
+        
+        .popup-detail-value {
+            font-weight: 500;
+        }
+        
+        .notification {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background-color: var(--surface);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 16px;
+            max-width: 300px;
+            z-index: 2500;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .notification.error {
+            border-left-color: var(--error);
+        }
+        
+        .notification.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .notification.success {
+            border-left-color: var(--success);
+        }
+        
+        .notification-icon {
+            color: var(--primary-color);
+        }
+        
+        .notification.error .notification-icon {
+            color: var(--error);
+        }
+        
+        .notification.warning .notification-icon {
+            color: var(--warning);
+        }
+        
+        .notification.success .notification-icon {
+            color: var(--success);
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .notification-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background-color: var(--surface);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 16px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        
+        .info-panel h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+        }
+        
+        .info-panel p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .info-panel ul {
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+        
+        .info-panel li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .close-info {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .filter-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background-color: var(--surface);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 16px;
+            width: 280px;
+            z-index: 1000;
+        }
+        
+        .filter-panel h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+        }
+        
+        .filter-group {
+            margin-bottom: 16px;
+        }
+        
+        .filter-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .filter-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        .filter-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .filter-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .filter-button.apply {
+            background-color: var(--primary-color);
+            color: var(--text-on-primary);
+        }
+        
+        .filter-button.apply:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .filter-button.reset {
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+        
+        .filter-button.reset:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .close-filter {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .chart-container {
+            height: 200px;
+            margin-bottom: 24px;
+        }
+        
+        .tab-container {
+            display: flex;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .weather-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background-color: var(--surface);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 16px;
+            width: 240px;
+            z-index: 1000;
+        }
+        
+        .weather-panel h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .weather-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .weather-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .weather-detail-label {
+            color: var(--text-secondary);
+        }
+        
+        .weather-detail-value {
+            font-weight: 500;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 12px;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .regulation-item {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .regulation-title {
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .regulation-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .regulation-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .regulation-detail .material-icons {
+            font-size: 16px;
+            color: var(--primary-light);
+        }
+        
+        .no-fly-zone {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--surface);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 16px;
+            width: 280px;
+            z-index: 1000;
+        }
+        
+        .no-fly-zone h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .no-fly-zone-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .no-fly-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .no-fly-item .material-icons {
+            color: var(--error);
+        }
+        
+        .close-no-fly {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>Morocco Drone Radar</h1>
+            <div class="header-controls">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Initializing...</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="map-controls">
+                    <button class="map-button" id="refreshButton" title="Refresh Data">
+                        <i class="material-icons">refresh</i>
+                    </button>
+                    <button class="map-button" id="locateButton" title="Center on Morocco">
+                        <i class="material-icons">my_location</i>
+                    </button>
+                    <button class="map-button" id="filterButton" title="Filter Drones">
+                        <i class="material-icons">filter_list</i>
+                    </button>
+                    <button class="map-button" id="weatherButton" title="Weather Information">
+                        <i class="material-icons">cloud</i>
+                    </button>
+                    <button class="map-button" id="infoButton" title="Information">
+                        <i class="material-icons">info</i>
+                    </button>
+                    <button class="map-button" id="noFlyButton" title="No-Fly Zones">
+                        <i class="material-icons">not_interested</i>
+                    </button>
+                </div>
+                
+                <div class="loading-overlay hidden" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading drone data...</div>
+                </div>
+                
+                <div class="info-panel hidden" id="infoPanel">
+                    <button class="close-info" id="closeInfo">
+                        <i class="material-icons">close</i>
+                    </button>
+                    <h3>About Drone Radar</h3>
+                    <p>This system monitors drone activity across Morocco in real-time.</p>
+                    <p><strong>Features:</strong></p>
+                    <ul>
+                        <li>Real-time drone position tracking</li>
+                        <li>Drone type and status information</li>
+                        <li>Battery level monitoring</li>
+                        <li>No-fly zone detection</li>
+                        <li>Weather impact assessment</li>
+                        <li>Regulatory compliance monitoring</li>
+                    </ul>
+                    <p><strong>Drone Types Tracked:</strong></p>
+                    <ul>
+                        <li>Recreational drones (< 2kg)</li>
+                        <li>Commercial drones (2-25kg)</li>
+                        <li>Professional drones (> 25kg)</li>
+                        <li>Government and emergency drones</li>
+                    </ul>
+                </div>
+                
+                <div class="filter-panel hidden" id="filterPanel">
+                    <button class="close-filter" id="closeFilter">
+                        <i class="material-icons">close</i>
+                    </button>
+                    <h3>Drone Filters</h3>
+                    
+                    <div class="filter-group">
+                        <label for="altitudeRange">Altitude Range: <span id="altitudeValue">0 - 150 m</span></label>
+                        <input type="range" id="altitudeRange" min="0" max="150" value="150">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="speedRange">Speed Range: <span id="speedValue">0 - 60 km/h</span></label>
+                        <input type="range" id="speedRange" min="0" max="60" value="60">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="typeFilter">Drone Type</label>
+                        <select id="typeFilter">
+                            <option value="all">All Types</option>
+                            <option value="recreational">Recreational</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="professional">Professional</option>
+                            <option value="government">Government</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="statusFilter">Flight Status</label>
+                        <select id="statusFilter">
+                            <option value="all">All Statuses</option>
+                            <option value="in-flight">In Flight</option>
+                            <option value="hovering">Hovering</option>
+                            <option value="landing">Landing</option>
+                            <option value="returning">Returning Home</option>
+                            <option value="warning">Warning</option>
+                            <option value="emergency">Emergency</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button class="filter-button reset" id="resetFilters">Reset</button>
+                        <button class="filter-button apply" id="applyFilters">Apply</button>
+                    </div>
+                </div>
+                
+                <div class="weather-panel hidden" id="weatherPanel">
+                    <h3>
+                        <i class="material-icons">cloud</i>
+                        Weather Conditions
+                    </h3>
+                    <div class="weather-info">
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Location:</span>
+                            <span class="weather-detail-value">Casablanca</span>
+                        </div>
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Temperature:</span>
+                            <span class="weather-detail-value">24°C</span>
+                        </div>
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Conditions:</span>
+                            <span class="weather-detail-value">Partly Cloudy</span>
+                        </div>
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Wind:</span>
+                            <span class="weather-detail-value">12 km/h NW</span>
+                        </div>
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Visibility:</span>
+                            <span class="weather-detail-value">10 km</span>
+                        </div>
+                        <div class="weather-detail">
+                            <span class="weather-detail-label">Drone Suitability:</span>
+                            <span class="weather-detail-value" style="color: var(--success);">Good</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="no-fly-zone hidden" id="noFlyPanel">
+                    <button class="close-no-fly" id="closeNoFly">
+                        <i class="material-icons">close</i>
+                    </button>
+                    <h3>
+                        <i class="material-icons">not_interested</i>
+                        No-Fly Zones
+                    </h3>
+                    <div class="no-fly-zone-list">
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>Airports (5km radius)</span>
+                        </div>
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>Military installations</span>
+                        </div>
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>Government buildings</span>
+                        </div>
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>Royal palaces</span>
+                        </div>
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>National parks (restricted altitude)</span>
+                        </div>
+                        <div class="no-fly-item">
+                            <i class="material-icons">warning</i>
+                            <span>Urban centers (above 120m)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Drone Activity Monitor</h2>
+                    <p>Real-time UAV tracking across Morocco</p>
+                </div>
+                
+                <div class="sidebar-content">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search by drone ID or operator...">
+                        <i class="material-icons search-icon">search</i>
+                    </div>
+                    
+                    <div class="stats-container">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalDrones">0</div>
+                                <div class="stat-label">Active Drones</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="lastUpdate">--:--</div>
+                                <div class="stat-label">Last Update</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="altitudeChart"></canvas>
+                    </div>
+                    
+                    <div class="tab-container">
+                        <div class="tab active" data-tab="drones">Drones</div>
+                        <div class="tab" data-tab="regulations">Regulations</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="drones-tab">
+                        <div class="section-title">
+                            <i class="material-icons">flight</i>
+                            <span>Active Drones</span>
+                        </div>
+                        
+                        <div class="drones-list" id="dronesList">
+                            <div class="empty-state">
+                                <i class="material-icons">flight_takeoff</i>
+                                <div class="empty-state-title">No drones detected</div>
+                                <div class="empty-state-description">Waiting for drone data...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="regulations-tab">
+                        <div class="section-title">
+                            <i class="material-icons">gavel</i>
+                            <span>Morocco Drone Regulations</span>
+                        </div>
+                        
+                        <div class="regulation-item">
+                            <div class="regulation-title">Registration Required</div>
+                            <div class="regulation-description">All drones over 250g must be registered with the Moroccan Civil Aviation Authority.</div>
+                            <div class="regulation-detail">
+                                <i class="material-icons">assignment</i>
+                                <span>Registration number must be displayed on drone</span>
+                            </div>
+                        </div>
+                        
+                        <div class="regulation-item">
+                            <div class="regulation-title">Altitude Restrictions</div>
+                            <div class="regulation-description">Maximum flight altitude of 120 meters (400 feet) above ground level.</div>
+                            <div class="regulation-detail">
+                                <i class="material-icons">height</i>
+                                <span>Lower limits in urban areas and near airports</span>
+                            </div>
+                        </div>
+                        
+                        <div class="regulation-item">
+                            <div class="regulation-title">No-Fly Zones</div>
+                            <div class="regulation-description">Drones are prohibited in restricted airspace including airports, military zones, and government facilities.</div>
+                            <div class="regulation-detail">
+                                <i class="material-icons">not_interested</i>
+                                <span>5km radius around airports</span>
+                            </div>
+                        </div>
+                        
+                        <div class="regulation-item">
+                            <div class="regulation-title">Visual Line of Sight</div>
+                            <div class="regulation-description">Operators must maintain visual line of sight with their drones at all times.</div>
+                            <div class="regulation-detail">
+                                <i class="material-icons">visibility</i>
+                                <span>First-person view (FPV) requires spotter</span>
+                            </div>
+                        </div>
+                        
+                        <div class="regulation-item">
+                            <div class="regulation-title">Operating Hours</div>
+                            <div class="regulation-description">Drone flights are permitted only during daylight hours unless special authorization is obtained.</div>
+                            <div class="regulation-detail">
+                                <i class="material-icons">access_time</i>
+                                <span>30 minutes before sunrise to 30 minutes after sunset</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Morocco bounding box coordinates
+        const MOROCCO_BBOX = {
+            minLat: 21.4207341578,
+            minLon: -17.0204284327,
+            maxLat: 35.7599881048,
+            maxLon: -1.12455115397
+        };
+        
+        // Moroccan airports data (for no-fly zones)
+        const MOROCCAN_AIRPORTS = [
+            { name: "Casablanca Mohammed V", code: "CMN", lat: 33.3675, lon: -7.5899 },
+            { name: "Marrakesh Menara", code: "RAK", lat: 31.6069, lon: -8.0364 },
+            { name: "Rabat-Salé", code: "RBA", lat: 34.0519, lon: -6.7515 },
+            { name: "Agadir Al Massira", code: "AGA", lat: 30.3250, lon: -9.4131 },
+            { name: "Tangier Ibn Battouta", code: "TNG", lat: 35.7327, lon: -5.9106 },
+            { name: "Fès-Saïss", code: "FEZ", lat: 33.9281, lon: -4.9738 },
+            { name: "Nador Al Aroui", code: "NDR", lat: 34.9969, lon: -3.0278 },
+            { name: "Oujda Angads", code: "OUD", lat: 34.7856, lon: -1.9253 },
+            { name: "Essaouira Mogador", code: "ESU", lat: 31.5092, lon: -9.7619 },
+            { name: "Tétouan Sania Ramel", code: "TTU", lat: 35.5883, lon: -5.3317 }
+        ];
+        
+        // Drone types mapping
+        const DRONE_TYPES = {
+            recreational: { name: "Recreational", maxWeight: 2, maxHeight: 120, color: "#4caf50" },
+            commercial: { name: "Commercial", maxWeight: 25, maxHeight: 150, color: "#2196f3" },
+            professional: { name: "Professional", maxWeight: 150, maxHeight: 150, color: "#9c27b0" },
+            government: { name: "Government", maxWeight: 500, maxHeight: 200, color: "#f44336" }
+        };
+        
+        // Drone status mapping
+        const DRONE_STATUS = {
+            "in-flight": { name: "In Flight", color: "#4caf50" },
+            "hovering": { name: "Hovering", color: "#2196f3" },
+            "landing": { name: "Landing", color: "#ff9800" },
+            "returning": { name: "Returning Home", color: "#9c27b0" },
+            "warning": { name: "Warning", color: "#ff9800" },
+            "emergency": { name: "Emergency", color: "#f44336" }
+        };
+        
+        // Configuration
+        const CONFIG = {
+            dataRefreshInterval: 5 * 1000, // 5 seconds
+            maxDrones: 50,
+            noFlyZoneRadius: 5000, // 5km in meters
+            warningZoneRadius: 7000, // 7km in meters
+            batteryWarningThreshold: 30, // 30%
+            batteryCriticalThreshold: 15, // 15%
+            maxAltitude: 150 // meters
+        };
+        
+        // Application state
+        let appState = {
+            map: null,
+            droneLayer: null,
+            noFlyLayer: null,
+            isConnected: false,
+            droneMarkers: [],
+            droneTrails: {},
+            refreshTimer: null,
+            lastUpdateTime: null,
+            filters: {
+                altitude: 150,
+                speed: 60,
+                type: 'all',
+                status: 'all'
+            },
+            altitudeChart: null,
+            filteredDrones: [],
+            droneData: []
+        };
+        
+        // DOM elements
+        const elements = {
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            totalDrones: document.getElementById('totalDrones'),
+            lastUpdate: document.getElementById('lastUpdate'),
+            dronesList: document.getElementById('dronesList'),
+            refreshButton: document.getElementById('refreshButton'),
+            locateButton: document.getElementById('locateButton'),
+            filterButton: document.getElementById('filterButton'),
+            weatherButton: document.getElementById('weatherButton'),
+            infoButton: document.getElementById('infoButton'),
+            noFlyButton: document.getElementById('noFlyButton'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            infoPanel: document.getElementById('infoPanel'),
+            closeInfo: document.getElementById('closeInfo'),
+            filterPanel: document.getElementById('filterPanel'),
+            closeFilter: document.getElementById('closeFilter'),
+            weatherPanel: document.getElementById('weatherPanel'),
+            noFlyPanel: document.getElementById('noFlyPanel'),
+            closeNoFly: document.getElementById('closeNoFly'),
+            altitudeRange: document.getElementById('altitudeRange'),
+            altitudeValue: document.getElementById('altitudeValue'),
+            speedRange: document.getElementById('speedRange'),
+            speedValue: document.getElementById('speedValue'),
+            typeFilter: document.getElementById('typeFilter'),
+            statusFilter: document.getElementById('statusFilter'),
+            applyFilters: document.getElementById('applyFilters'),
+            resetFilters: document.getElementById('resetFilters'),
+            searchInput: document.getElementById('searchInput'),
+            tabs: document.querySelectorAll('.tab'),
+            tabContents: document.querySelectorAll('.tab-content')
+        };
+        
+        // Initialize the application
+        function initApp() {
+            // Initialize map
+            appState.map = L.map('map').setView([28.5, -9.5], 6);
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(appState.map);
+            
+            // Add Morocco bounding box rectangle
+            L.rectangle([
+                [MOROCCO_BBOX.minLat, MOROCCO_BBOX.minLon],
+                [MOROCCO_BBOX.maxLat, MOROCCO_BBOX.maxLon]
+            ], {
+                color: '#1565c0',
+                weight: 2,
+                fillOpacity: 0.1,
+                dashArray: '5, 10'
+            }).addTo(appState.map);
+            
+            // Initialize drone markers layer group
+            appState.droneLayer = L.layerGroup().addTo(appState.map);
+            
+            // Initialize no-fly zones layer group
+            appState.noFlyLayer = L.layerGroup().addTo(appState.map);
+            
+            // Add no-fly zones around airports
+            addNoFlyZones();
+            
+            // Initialize altitude chart
+            initAltitudeChart();
+            
+            // Set up event listeners
+            elements.refreshButton.addEventListener('click', fetchDroneData);
+            elements.locateButton.addEventListener('click', centerOnMorocco);
+            elements.filterButton.addEventListener('click', toggleFilterPanel);
+            elements.weatherButton.addEventListener('click', toggleWeatherPanel);
+            elements.infoButton.addEventListener('click', toggleInfoPanel);
+            elements.noFlyButton.addEventListener('click', toggleNoFlyPanel);
+            elements.closeInfo.addEventListener('click', closeInfoPanel);
+            elements.closeFilter.addEventListener('click', closeFilterPanel);
+            elements.closeNoFly.addEventListener('click', closeNoFlyPanel);
+            
+            // Filter event listeners
+            elements.altitudeRange.addEventListener('input', updateAltitudeValue);
+            elements.speedRange.addEventListener('input', updateSpeedValue);
+            elements.applyFilters.addEventListener('click', applyFilters);
+            elements.resetFilters.addEventListener('click', resetFilters);
+            
+            // Search event listener
+            elements.searchInput.addEventListener('input', filterDronesBySearch);
+            
+            // Tab event listeners
+            elements.tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            // Start fetching drone data
+            fetchDroneData();
+            
+            // Set up periodic data refresh
+            appState.refreshTimer = setInterval(fetchDroneData, CONFIG.dataRefreshInterval);
+        }
+        
+        // Add no-fly zones to the map
+        function addNoFlyZones() {
+            MOROCCAN_AIRPORTS.forEach(airport => {
+                // No-fly zone (5km radius)
+                L.circle([airport.lat, airport.lon], {
+                    color: '#d32f2f',
+                    fillColor: '#d32f2f',
+                    fillOpacity: 0.2,
+                    radius: CONFIG.noFlyZoneRadius,
+                    weight: 2
+                }).addTo(appState.noFlyLayer);
+                
+                // Warning zone (7km radius)
+                L.circle([airport.lat, airport.lon], {
+                    color: '#ff9800',
+                    fillColor: '#ff9800',
+                    fillOpacity: 0.1,
+                    radius: CONFIG.warningZoneRadius,
+                    weight: 1,
+                    dashArray: '5, 5'
+                }).addTo(appState.noFlyLayer);
+                
+                // Airport marker
+                L.marker([airport.lat, airport.lon], {
+                    icon: L.divIcon({
+                        html: `<i class="material-icons" style="color: #d32f2f; font-size: 16px;">location_on</i>`,
+                        iconSize: [20, 20],
+                        className: 'airport-marker'
+                    })
+                }).addTo(appState.noFlyLayer).bindPopup(`
+                    <div class="popup-content">
+                        <div class="popup-title">${airport.name}</div>
+                        <div class="popup-detail">
+                            <span class="popup-detail-label">Code:</span>
+                            <span class="popup-detail-value">${airport.code}</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="popup-detail-label">No-Fly Zone:</span>
+                            <span class="popup-detail-value">5km radius</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="popup-detail-label">Warning Zone:</span>
+                            <span class="popup-detail-value">7km radius</span>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+        
+        // Initialize altitude chart
+        function initAltitudeChart() {
+            const ctx = document.getElementById('altitudeChart').getContext('2d');
+            appState.altitudeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-50m', '50-100m', '100-150m', '>150m'],
+                    datasets: [{
+                        label: 'Drones by Altitude',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(21, 101, 192, 0.5)',
+                            'rgba(21, 101, 192, 0.6)',
+                            'rgba(21, 101, 192, 0.7)',
+                            'rgba(244, 67, 54, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(21, 101, 192, 1)',
+                            'rgba(21, 101, 192, 1)',
+                            'rgba(21, 101, 192, 1)',
+                            'rgba(244, 67, 54, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Drones'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Altitude Range'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update altitude chart
+        function updateAltitudeChart(drones) {
+            const altitudeRanges = [0, 0, 0, 0]; // 0-50m, 50-100m, 100-150m, >150m
+            
+            drones.forEach(drone => {
+                const altitude = drone.altitude;
+                if (altitude < 50) altitudeRanges[0]++;
+                else if (altitude < 100) altitudeRanges[1]++;
+                else if (altitude < 150) altitudeRanges[2]++;
+                else altitudeRanges[3]++;
+            });
+            
+            appState.altitudeChart.data.datasets[0].data = altitudeRanges;
+            appState.altitudeChart.update();
+        }
+        
+        // Toggle filter panel
+        function toggleFilterPanel() {
+            elements.filterPanel.classList.toggle('hidden');
+        }
+        
+        // Close filter panel
+        function closeFilterPanel() {
+            elements.filterPanel.classList.add('hidden');
+        }
+        
+        // Toggle weather panel
+        function toggleWeatherPanel() {
+            elements.weatherPanel.classList.toggle('hidden');
+        }
+        
+        // Toggle info panel
+        function toggleInfoPanel() {
+            elements.infoPanel.classList.toggle('hidden');
+        }
+        
+        // Toggle no-fly panel
+        function toggleNoFlyPanel() {
+            elements.noFlyPanel.classList.toggle('hidden');
+        }
+        
+        // Close info panel
+        function closeInfoPanel() {
+            elements.infoPanel.classList.add('hidden');
+        }
+        
+        // Close no-fly panel
+        function closeNoFlyPanel() {
+            elements.noFlyPanel.classList.add('hidden');
+        }
+        
+        // Update altitude value display
+        function updateAltitudeValue() {
+            const value = elements.altitudeRange.value;
+            elements.altitudeValue.textContent = `0 - ${value} m`;
+        }
+        
+        // Update speed value display
+        function updateSpeedValue() {
+            const value = elements.speedRange.value;
+            elements.speedValue.textContent = `0 - ${value} km/h`;
+        }
+        
+        // Apply filters
+        function applyFilters() {
+            appState.filters.altitude = parseInt(elements.altitudeRange.value);
+            appState.filters.speed = parseInt(elements.speedRange.value);
+            appState.filters.type = elements.typeFilter.value;
+            appState.filters.status = elements.statusFilter.value;
+            
+            // Apply filters to current drones
+            filterAndDisplayDrones();
+            closeFilterPanel();
+        }
+        
+        // Reset filters
+        function resetFilters() {
+            elements.altitudeRange.value = 150;
+            elements.speedRange.value = 60;
+            elements.typeFilter.value = 'all';
+            elements.statusFilter.value = 'all';
+            updateAltitudeValue();
+            updateSpeedValue();
+            
+            appState.filters = {
+                altitude: 150,
+                speed: 60,
+                type: 'all',
+                status: 'all'
+            };
+            
+            // Reset filters to show all drones
+            filterAndDisplayDrones();
+            closeFilterPanel();
+        }
+        
+        // Filter drones by search term
+        function filterDronesBySearch() {
+            const searchTerm = elements.searchInput.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                filterAndDisplayDrones();
+                return;
+            }
+            
+            const filtered = appState.filteredDrones.filter(drone => {
+                const id = drone.id.toLowerCase();
+                const operator = (drone.operator || '').toLowerCase();
+                
+                return id.includes(searchTerm) || operator.includes(searchTerm);
+            });
+            
+            displayDrones(filtered);
+        }
+        
+        // Switch tab
+        function switchTab(tabName) {
+            elements.tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            elements.tabContents.forEach(content => {
+                if (content.id === `${tabName}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Update connection status
+        function updateStatus(connected, message) {
+            appState.isConnected = connected;
+            elements.statusDot.classList.toggle('connected', connected);
+            elements.statusText.textContent = message;
+        }
+        
+        // Format timestamp to readable time
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Create drone icon
+        function createDroneIcon(status = 'in-flight', type = 'recreational') {
+            let color = DRONE_TYPES[type]?.color || '#1565c0';
+            
+            // Override color based on status
+            if (status === 'warning') color = '#ff9800';
+            else if (status === 'emergency') color = '#f44336';
+            
+            return L.divIcon({
+                html: `<i class="material-icons" style="color: ${color}; font-size: 16px;">flight</i>`,
+                iconSize: [20, 20],
+                className: 'drone-icon'
+            });
+        }
+        
+        // Get drone status class
+        function getDroneStatusClass(status) {
+            if (status === 'warning') return 'warning';
+            else if (status === 'emergency') return 'danger';
+            return '';
+        }
+        
+        // Get battery level class
+        function getBatteryLevelClass(battery) {
+            if (battery < CONFIG.batteryCriticalThreshold) return 'low';
+            else if (battery < CONFIG.batteryWarningThreshold) return 'medium';
+            return 'high';
+        }
+        
+        // Check if drone is in no-fly zone
+        function isInNoFlyZone(lat, lon) {
+            for (const airport of MOROCCAN_AIRPORTS) {
+                const distance = calculateDistance(lat, lon, airport.lat, airport.lon);
+                if (distance <= CONFIG.noFlyZoneRadius) {
+                    return {
+                        inNoFly: true,
+                        airport: airport.name,
+                        distance: distance
+                    };
+                }
+            }
+            return { inNoFly: false };
+        }
+        
+        // Check if drone is in warning zone
+        function isInWarningZone(lat, lon) {
+            for (const airport of MOROCCAN_AIRPORTS) {
+                const distance = calculateDistance(lat, lon, airport.lat, airport.lon);
+                if (distance > CONFIG.noFlyZoneRadius && distance <= CONFIG.warningZoneRadius) {
+                    return {
+                        inWarning: true,
+                        airport: airport.name,
+                        distance: distance
+                    };
+                }
+            }
+            return { inWarning: false };
+        }
+        
+        // Calculate distance between two points in meters
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c; // Distance in meters
+        }
+        
+        // Center map on Morocco
+        function centerOnMorocco() {
+            appState.map.setView([28.5, -9.5], 6);
+        }
+        
+        // Filter drones based on current filters
+        function filterDrones(drones) {
+            return drones.filter(drone => {
+                // Apply altitude filter
+                if (drone.altitude > appState.filters.altitude) {
+                    return false;
+                }
+                
+                // Apply speed filter
+                if (drone.speed > appState.filters.speed) {
+                    return false;
+                }
+                
+                // Apply type filter
+                if (appState.filters.type !== 'all' && drone.type !== appState.filters.type) {
+                    return false;
+                }
+                
+                // Apply status filter
+                if (appState.filters.status !== 'all' && drone.status !== appState.filters.status) {
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
+        // Filter and display drones
+        function filterAndDisplayDrones() {
+            if (appState.droneData.length > 0) {
+                appState.filteredDrones = filterDrones(appState.droneData);
+                displayDrones(appState.filteredDrones);
+                updateAltitudeChart(appState.filteredDrones);
+            }
+        }
+        
+        // Display drones on map and in list
+        function displayDrones(drones) {
+            // Clear existing markers
+            appState.droneLayer.clearLayers();
+            appState.droneMarkers = [];
+            
+            // Update statistics
+            elements.totalDrones.textContent = drones.length;
+            
+            if (drones.length > 0) {
+                // Clear drones list
+                elements.dronesList.innerHTML = '';
+                
+                // Process each drone
+                drones.forEach(drone => {
+                    // Check for no-fly zone violations
+                    const noFlyCheck = isInNoFlyZone(drone.lat, drone.lon);
+                    const warningCheck = isInWarningZone(drone.lat, drone.lon);
+                    
+                    // Update drone status based on position
+                    let status = drone.status;
+                    if (noFlyCheck.inNoFly) {
+                        status = 'emergency';
+                    } else if (warningCheck.inWarning) {
+                        status = 'warning';
+                    }
+                    
+                    // Create marker for the drone
+                    const marker = L.marker([drone.lat, drone.lon], {
+                        icon: createDroneIcon(status, drone.type)
+                    }).addTo(appState.droneLayer);
+                    
+                    // Add popup with drone information
+                    const popupContent = `
+                        <div class="popup-content">
+                            <div class="popup-title">${drone.id}</div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Type:</span>
+                                <span class="popup-detail-value">${DRONE_TYPES[drone.type]?.name || 'Unknown'}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Operator:</span>
+                                <span class="popup-detail-value">${drone.operator || 'Unknown'}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Status:</span>
+                                <span class="popup-detail-value">${DRONE_STATUS[status]?.name || 'Unknown'}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Altitude:</span>
+                                <span class="popup-detail-value">${drone.altitude} m</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Speed:</span>
+                                <span class="popup-detail-value">${drone.speed} km/h</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-detail-label">Battery:</span>
+                                <span class="popup-detail-value">${drone.battery}%</span>
+                            </div>
+                            ${noFlyCheck.inNoFly ? `
+                                <div class="popup-detail" style="color: #d32f2f;">
+                                    <span class="popup-detail-label">⚠️ VIOLATION:</span>
+                                    <span class="popup-detail-value">In no-fly zone near ${noFlyCheck.airport}</span>
+                                </div>
+                            ` : ''}
+                            ${warningCheck.inWarning ? `
+                                <div class="popup-detail" style="color: #ff9800;">
+                                    <span class="popup-detail-label">⚠️ WARNING:</span>
+                                    <span class="popup-detail-value">Near warning zone of ${warningCheck.airport}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    
+                    // Show notification for no-fly zone violations
+                    if (noFlyCheck.inNoFly) {
+                        showNotification(
+                            'No-Fly Zone Violation',
+                            `Drone ${drone.id} is in a no-fly zone near ${noFlyCheck.airport}`,
+                            'error'
+                        );
+                    }
+                    
+                    // Add to drones list
+                    const droneItem = document.createElement('div');
+                    droneItem.className = `drone-item ${getDroneStatusClass(status)}`;
+                    droneItem.innerHTML = `
+                        <div class="drone-header">
+                            <div class="drone-id">${drone.id}</div>
+                            <div class="drone-type">${DRONE_TYPES[drone.type]?.name || 'Unknown'}</div>
+                        </div>
+                        <div class="drone-details">
+                            <div class="drone-detail">
+                                <i class="material-icons">person</i>
+                                <span>${drone.operator || 'Unknown'}</span>
+                            </div>
+                            <div class="drone-detail">
+                                <i class="material-icons">height</i>
+                                <span>${drone.altitude} m</span>
+                            </div>
+                            <div class="drone-detail">
+                                <i class="material-icons">speed</i>
+                                <span>${drone.speed} km/h</span>
+                            </div>
+                            <div class="drone-detail battery-indicator">
+                                <i class="material-icons">battery_full</i>
+                                <div class="battery-bar">
+                                    <div class="battery-fill ${getBatteryLevelClass(drone.battery)}"></div>
+                                </div>
+                                <span>${drone.battery}%</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Highlight marker when drone item is clicked
+                    droneItem.addEventListener('click', () => {
+                        appState.map.setView([drone.lat, drone.lon], 10);
+                        marker.openPopup();
+                    });
+                    
+                    elements.dronesList.appendChild(droneItem);
+                    appState.droneMarkers.push({ marker, drone });
+                });
+            } else {
+                elements.dronesList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="material-icons">flight_takeoff</i>
+                        <div class="empty-state-title">No drones match your filters</div>
+                        <div class="empty-state-description">Try adjusting your filter criteria</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Generate simulated drone data
+        function generateDroneData() {
+            const droneTypes = Object.keys(DRONE_TYPES);
+            const droneStatuses = Object.keys(DRONE_STATUS);
+            const operators = ['SkyVision', 'DroneTech', 'AeroView', 'MoroccoDrones', 'Atlas UAV', 'Sahara Imaging', 'Casablanca Aerial', 'Marrakesh Drones'];
+            
+            const drones = [];
+            
+            // Generate a random number of drones (between 5 and CONFIG.maxDrones)
+            const numDrones = Math.floor(Math.random() * (CONFIG.maxDrones - 5)) + 5;
+            
+            for (let i = 0; i < numDrones; i++) {
+                const type = droneTypes[Math.floor(Math.random() * droneTypes.length)];
+                const status = droneStatuses[Math.floor(Math.random() * droneStatuses.length)];
+                
+                // Generate random position within Morocco
+                const lat = MOROCCO_BBOX.minLat + Math.random() * (MOROCCO_BBOX.maxLat - MOROCCO_BBOX.minLat);
+                const lon = MOROCCO_BBOX.minLon + Math.random() * (MOROCCO_BBOX.maxLon - MOROCCO_BBOX.minLon);
+                
+                // Generate random altitude (weighted toward lower altitudes)
+                let altitude;
+                const altitudeRand = Math.random();
+                if (altitudeRand < 0.6) {
+                    altitude = Math.floor(Math.random() * 50); // 0-50m
+                } else if (altitudeRand < 0.9) {
+                    altitude = 50 + Math.floor(Math.random() * 50); // 50-100m
+                } else {
+                    altitude = 100 + Math.floor(Math.random() * 100); // 100-200m
+                }
+                
+                // Generate random speed (weighted toward lower speeds)
+                let speed;
+                const speedRand = Math.random();
+                if (speedRand < 0.7) {
+                    speed = Math.floor(Math.random() * 20); // 0-20 km/h
+                } else if (speedRand < 0.9) {
+                    speed = 20 + Math.floor(Math.random() * 30); // 20-50 km/h
+                } else {
+                    speed = 50 + Math.floor(Math.random() * 30); // 50-80 km/h
+                }
+                
+                // Generate random battery level
+                const battery = Math.floor(Math.random() * 100);
+                
+                drones.push({
+                    id: `DRN-${Math.floor(Math.random() * 9000) + 1000}`,
+                    type: type,
+                    status: status,
+                    lat: lat,
+                    lon: lon,
+                    altitude: altitude,
+                    speed: speed,
+                    battery: battery,
+                    operator: operators[Math.floor(Math.random() * operators.length)]
+                });
+            }
+            
+            return drones;
+        }
+        
+        // Fetch drone data (simulated)
+        function fetchDroneData() {
+            elements.loadingOverlay.classList.remove('hidden');
+            
+            try {
+                // Simulate API delay
+                setTimeout(() => {
+                    // Generate simulated drone data
+                    const droneData = generateDroneData();
+                    
+                    // Store drone data
+                    appState.droneData = droneData;
+                    appState.lastUpdateTime = Date.now();
+                    
+                    // Update status
+                    updateStatus(true, 'Connected');
+                    
+                    // Update statistics
+                    elements.lastUpdate.textContent = formatTime(appState.lastUpdateTime);
+                    
+                    // Apply filters
+                    appState.filteredDrones = filterDrones(appState.droneData);
+                    
+                    // Display drones
+                    displayDrones(appState.filteredDrones);
+                    
+                    // Update altitude chart
+                    updateAltitudeChart(appState.filteredDrones);
+                    
+                    elements.loadingOverlay.classList.add('hidden');
+                }, 500);
+            } catch (error) {
+                console.error('Error fetching drone data:', error);
+                updateStatus(false, 'Connection Error');
+                showNotification('Connection Error', 'Unable to fetch drone data.', 'error');
+                elements.loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        // Show notification
+        function showNotification(title, message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="material-icons notification-icon">${type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'check_circle' : 'info'}</i>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="notification-close">
+                    <i class="material-icons">close</i>
+                </button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+            
+            // Remove when close button is clicked
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+        }
+        
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
