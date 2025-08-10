@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wikipedia 3D Explorer</title>
+
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- React Three Fiber -->
+  <script src="https://cdn.jsdelivr.net/npm/@react-three/fiber@8.0.27/dist/index.umd.js"></script>
+  
+  <!-- Drei -->
+  <script src="https://cdn.jsdelivr.net/npm/@react-three/drei@9.0.27/dist/index.umd.js"></script>
+
+  <style>
+    body { margin: 0; background: #111; color: #fff; font-family: sans-serif; overflow: hidden; }
+    #root { width: 100%; height: 100vh; }
+    .input-container {
+      position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.7);
+      padding: 10px; border-radius: 10px;
+    }
+    input { padding: 8px; width: 250px; border-radius: 5px; border: none; }
+    button { padding: 8px 12px; margin-top: 5px; border: none; border-radius: 5px; background: dodgerblue; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useMemo } = React;
+    const { Canvas: R3FCanvas, useFrame } = ReactThreeFiber;
+    const { OrbitControls, Text } = drei;
+
+    function RotatingNode({ position, color, label, onClick, isCenter = false, isSelected = false }) {
+      const meshRef = useRef();
+      const [hovered, setHovered] = useState(false);
+
+      useFrame(() => {
+        if (meshRef.current) meshRef.current.rotation.y += 0.01;
+      });
+
+      return (
+        <mesh 
+          ref={meshRef} 
+          position={position} 
+          onClick={onClick}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+          scale={hovered || isSelected ? 1.2 : 1}
+        >
+          <sphereGeometry args={[isCenter ? 1 : 0.7, 32, 32]} />
+          <meshStandardMaterial 
+            color={isSelected ? "#ff6b6b" : color} 
+            metalness={0.8} 
+            roughness={0.3}
+            emissive={hovered || isSelected ? color : "#000000"}
+            emissiveIntensity={hovered || isSelected ? 0.3 : 0}
+          />
+          <Text
+            position={[0, 0, isCenter ? 1.2 : 0.9]}
+            fontSize={isCenter ? 0.4 : 0.3}
+            color="black"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {label}
+          </Text>
+        </mesh>
+      );
+    }
+
+    function Particles({ count = 200 }) {
+      const mesh = useRef();
+      const particles = useMemo(() => {
+        const temp = [];
+        for (let i = 0; i < count; i++) {
+          temp.push((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
+        }
+        return new Float32Array(temp);
+      }, [count]);
+
+      useFrame((state, delta) => {
+        if (mesh.current) {
+          mesh.current.rotation.x += delta * 0.05;
+          mesh.current.rotation.y += delta * 0.075;
+        }
+      });
+
+      return (
+        <points ref={mesh}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={particles.length / 3}
+              array={particles}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <pointsMaterial size={0.05} color="#ffffff" transparent opacity={0.6} sizeAttenuation />
+        </points>
+      );
+    }
+
+    function App() {
+      const [searchTerm, setSearchTerm] = useState("Quantum_mechanics");
+      const [centerNode, setCenterNode] = useState(null);
+      const [nodes, setNodes] = useState([]);
+      const [selectedNode, setSelectedNode] = useState(null);
+
+      const fetchArticleSections = async (title) => {
+        try {
+          const res = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${title}&prop=sections&format=json&origin=*`);
+          const data = await res.json();
+          if (data.parse) {
+            const sections = data.parse.sections.map(s => s.line).slice(0, 10);
+            const positions = sections.map((_, i) => {
+              const angle = (i / sections.length) * Math.PI * 2;
+              const radius = 5;
+              return [Math.cos(angle) * radius, Math.sin(angle) * radius, 0];
+            });
+            const newNodes = sections.map((sec, i) => ({
+              id: i,
+              label: sec,
+              position: positions[i],
+              color: `hsl(${(i / sections.length) * 360}, 100%, 50%)`
+            }));
+            setCenterNode({ label: title, position: [0,0,0], color: "hotpink" });
+            setNodes(newNodes);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      useEffect(() => {
+        fetchArticleSections(searchTerm);
+      }, [searchTerm]);
+
+      const handleNodeClick = (node) => {
+        setSelectedNode(node);
+        setSearchTerm(node.label.replace(/\s+/g, "_"));
+      };
+
+      return (
+        <>
+          <div className="input-container">
+            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <button onClick={() => fetchArticleSections(searchTerm)}>Search</button>
+          </div>
+
+          <R3FCanvas camera={{ position: [0, 0, 15], fov: 50 }}>
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[5, 5, 5]} intensity={1} />
+            <OrbitControls />
+            <Particles count={150} />
+
+            {centerNode && (
+              <RotatingNode 
+                position={centerNode.position} 
+                color={centerNode.color} 
+                label={centerNode.label} 
+                isCenter 
+              />
+            )}
+
+            {nodes.map((node) => (
+              <RotatingNode 
+                key={node.id} 
+                position={node.position} 
+                color={node.color} 
+                label={node.label} 
+                onClick={() => handleNodeClick(node)} 
+                isSelected={selectedNode && selectedNode.id === node.id}
+              />
+            ))}
+          </R3FCanvas>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
