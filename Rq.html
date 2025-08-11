@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Archeopedia — XRONOS-like Data Browser</title>
+
+  <!-- Tailwind (CDN quick build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet Draw (for bounding box) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel for JSX (in-browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    /* small custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+    .leaflet-container { border-radius: 0.5rem; }
+    /* ensure map and sidebar heights */
+    #app { min-height: 100vh; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <script type="text/babel">
+  const { useState, useEffect, useMemo, useRef } = React;
+
+  /************************************************************************
+   * Single-file React app
+   * Expects /data/output.json accessible (same origin)
+   *
+   * Features:
+   *  - Fetch /data/output.json and normalize fields
+   *  - Table with paging, sorting
+   *  - Full-text search + multi-select type filter + bibliography filter
+   *  - Date/year-range filter
+   *  - Leaflet map with markers
+   *  - Leaflet Draw bounding-box selection to filter by map bounds
+   *  - Download filtered JSON and CSV
+   ************************************************************************/
+
+  function App() {
+    const [sites, setSites] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // UI state
+    const [query, setQuery] = useState('');
+    const [selectedTypes, setSelectedTypes] = useState([]); // multi-select
+    const [bibFilter, setBibFilter] = useState('');
+    const [minYear, setMinYear] = useState('');
+    const [maxYear, setMaxYear] = useState('');
+    const [page, setPage] = useState(1);
+    const pageSize = 12;
+    const [sortKey, setSortKey] = useState('site_name');
+    const [sortDir, setSortDir] = useState('asc');
+    const [selectedSite, setSelectedSite] = useState(null);
+    const [mapBoundsFilter, setMapBoundsFilter] = useState(null); // {north, south, east, west}
+
+    // Map refs
+    const mapRef = useRef(null);
+    const markersRef = useRef([]);
+    const drawControlRef = useRef(null);
+    const drawnLayerRef = useRef(null);
+
+    // Fetch and normalize
+    useEffect(() => {
+      async function fetchData() {
+        setLoading(true);
+        setError(null);
+        try {
+          const res = await fetch('/data/output.json', { cache: 'no-cache' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const normalized = (data || []).map((s, idx) => normalizeSite(s, idx));
+          // Keep only Morocco entries — same as earlier request
+          const moroccoOnly = normalized.filter(s => (s.country || '').toLowerCase() === 'morocco' || (s.site_name && s.site_name.toLowerCase().includes('morocco')) === false ? normalized.length>0? false : normalized : normalized);
+          // NOTE: user asked to keep Morocco only earlier; but to be flexible, we'll not forcibly filter country
+          setSites(normalized);
+          setLoading(false);
+        } catch (e) {
+          console.error(e);
+          setError('Failed to load /data/output.json — ensure the file exists and is reachable from this page.');
+          setLoading(false);
+        }
+      }
+      fetchData();
+    }, []);
+
+    // Build derived filter lists
+    const siteTypes = useMemo(() => {
+      const s = new Set();
+      sites.forEach(site => { if (site.site_type) s.add(site.site_type); });
+      return Array.from(s).sort();
+    }, [sites]);
+
+    // Parsed year for each site (best effort)
+    // cached with each site object: site._years => {min,max} or null
+    useEffect(() => {
+      // compute years for existing sites
+      setSites(prev => prev.map(s => ({ ...s, _years: parseYearsFromSite(s) })));
+    }, [sites.length === 0]); // only run once after initial load
+
+    // Filtering logic
+    const filtered = useMemo(() => {
+      const q = query.trim().toLowerCase();
+      return sites.filter(site => {
+        // site_type multi-select
+        if (selectedTypes.length > 0 && !selectedTypes.includes(site.site_type)) return false;
+        // bibliography filter
+        if (bibFilter) {
+          const bibOK = (site.bibliography || []).some(b => (b || '').toLowerCase().includes(bibFilter.toLowerCase()));
+          if (!bibOK) return false;
+        }
+        // year range filter
+        if ((minYear || maxYear) && site._years) {
+          const minY = minYear ? Number(minYear) : -Infinity;
+          const maxY = maxYear ? Number(maxYear) : Infinity;
+          const overlap = !(site._years.max < minY || site._years.min > maxY);
+          if (!overlap) return false;
+        }
+        // map bounding box
+        if (mapBoundsFilter && (site.latitude == null || site.longitude == null)) return false;
+        if (mapBoundsFilter) {
+          const lat = site.latitude, lon = site.longitude;
+          if (lat < mapBoundsFilter.south || lat > mapBoundsFilter.north || lon < mapBoundsFilter.west || lon > mapBoundsFilter.east) return false;
+        }
+        // search query
+        if (!q) return true;
+        const hay = [
+          site.site_name,
+          site.description,
+          site.site_type,
+          site.period,
+          site.main_reference,
+          ...(site.bibliography || []).join(' ')
+        ].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+    }, [sites, query, selectedTypes, bibFilter, minYear, maxYear, mapBoundsFilter]);
+
+    // Sorting
+    const sorted = useMemo(() => {
+      const arr = filtered.slice();
+      arr.sort((a,b) => {
+        const A = (String(a[sortKey] ?? '')).toLowerCase();
+        const B = (String(b[sortKey] ?? '')).toLowerCase();
+        if (A < B) return sortDir === 'asc' ? -1 : 1;
+        if (A > B) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      return arr;
+    }, [filtered, sortKey, sortDir]);
+
+    // Pagination
+    const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    useEffect(() => { if (page > pages) setPage(1); }, [pages]);
+    const pageItems = sorted.slice((page - 1) * pageSize, page * pageSize);
+
+    // Initialize map once
+    useEffect(() => {
+      if (!mapRef.current && typeof L !== 'undefined') {
+        const m = L.map('map', { preferCanvas: true }).setView([31.7917, -7.0926], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(m);
+        mapRef.current = m;
+
+        // add draw control (rectangle)
+        const drawnItems = new L.FeatureGroup();
+        m.addLayer(drawnItems);
+        drawnLayerRef.current = drawnItems;
+
+        const drawControl = new L.Control.Draw({
+          draw: {
+            polyline: false,
+            polygon: false,
+            circle: false,
+            marker: false,
+            circlemarker: false,
+            rectangle: {
+              shapeOptions: { color: '#3388ff' }
+            }
+          },
+          edit: {
+            featureGroup: drawnItems,
+            remove: true
+          }
+        });
+        drawControlRef.current = drawControl;
+        m.addControl(drawControl);
+
+        m.on(L.Draw.Event.CREATED, function (e) {
+          const layer = e.layer;
+          // Clear previous
+          drawnItems.clearLayers();
+          drawnItems.addLayer(layer);
+          const b = layer.getBounds();
+          setMapBoundsFilter({ north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() });
+        });
+        m.on(L.Draw.Event.DELETED, function () {
+          drawnItems.clearLayers();
+          setMapBoundsFilter(null);
+        });
+      }
+    }, []);
+
+    // Update markers whenever pageItems change (display only page items)
+    useEffect(() => {
+      if (!mapRef.current) return;
+      // remove old markers
+      markersRef.current.forEach(mk => { try { mk.remove(); } catch(e){} });
+      markersRef.current = [];
+      pageItems.forEach(site => {
+        const lat = Number(site.latitude), lon = Number(site.longitude);
+        if (!isFinite(lat) || !isFinite(lon)) return;
+        const mk = L.marker([lat, lon]);
+        mk.addTo(mapRef.current).bindPopup(`<b>${escapeHTML(site.site_name)}</b><br>${escapeHTML(site.site_type)}<br><small>${escapeHTML(site.period || '')}</small>`);
+        mk.on('click', () => {
+          setSelectedSite(site);
+          mapRef.current.setView([lat, lon], 12);
+        });
+        markersRef.current.push(mk);
+      });
+    }, [pageItems]);
+
+    // Utility: escape HTML
+    function escapeHTML(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Toggle selection in multi-select list
+    function toggleType(t) {
+      setPage(1);
+      setSelectedTypes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t]);
+    }
+
+    // Download current filtered dataset as JSON
+    function downloadJSON() {
+      const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'archeo-filtered.json'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // Download CSV of current page
+    function downloadCSV() {
+      const rows = pageItems.map(s => ({
+        id: s.id, name: s.site_name, type: s.site_type, period: s.period,
+        lat: s.latitude, lon: s.longitude, reference: s.main_reference
+      }));
+      if (rows.length === 0) return;
+      const header = Object.keys(rows[0]).join(',') + '\\n';
+      const body = rows.map(r => Object.values(r).map(v => `"${String(v || '').replace(/"/g,'""')}"`).join(',')).join('\\n');
+      const blob = new Blob([header + body], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'archeo-page.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // Small helper to render bibliography string with URL detection
+    function renderBiblioItem(b) {
+      if (!b) return null;
+      const s = String(b);
+      const urlRe = /(https?:\\/\\/[^\\s]+)/i;
+      const m = s.match(urlRe);
+      if (m) {
+        const url = m[0];
+        const text = s.replace(url, '').trim() || url;
+        return <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 underline">{text}</a>;
+      }
+      return <span>{s}</span>;
+    }
+
+    // UI: loading / error
+    if (loading) return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="text-gray-700">Loading /data/output.json ...</div>
+        </div>
+      </div>
+    );
+    if (error) return <div className="min-h-screen flex items-center justify-center text-red-700">{error}</div>;
+
+    // Main UI
+    return (
+      <div id="app" className="p-4">
+        <header className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold">Archeopedia — XRONOS-like Data Browser</h1>
+            <p className="text-sm text-gray-600">Place your JSON at <code className="bg-white px-1 rounded">/data/output.json</code>. Filters: search, types, date range, bibliography, and map bounding box.</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { setPage(1); setQuery(''); setSelectedTypes([]); setBibFilter(''); setMinYear(''); setMaxYear(''); setMapBoundsFilter(null); drawnLayerRef.current?.clearLayers(); }} className="px-3 py-2 bg-gray-200 rounded">Reset filters</button>
+            <button onClick={downloadJSON} className="px-3 py-2 bg-green-600 text-white rounded">Download JSON</button>
+            <button onClick={downloadCSV} className="px-3 py-2 bg-blue-600 text-white rounded">Export CSV (page)</button>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT: Controls + Table */}
+          <div className="lg:col-span-2 bg-white rounded shadow p-4 flex flex-col">
+            <div className="flex flex-col md:flex-row gap-2 mb-3">
+              <input value={query} onChange={e=>{ setPage(1); setQuery(e.target.value); }} placeholder="Search name, description, bibliography..." className="flex-1 p-2 border rounded" />
+              <input value={bibFilter} onChange={e=>{ setPage(1); setBibFilter(e.target.value); }} placeholder="Filter bibliography..." className="p-2 border rounded w-full md:w-64" />
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center mb-3">
+              <div className="text-sm text-gray-600">Site types:</div>
+              <div className="flex gap-2 flex-wrap">
+                {siteTypes.map(t => (
+                  <button key={t} onClick={()=>toggleType(t)} className={`px-2 py-1 border rounded text-sm ${selectedTypes.includes(t) ? 'bg-blue-600 text-white' : 'bg-white'}`}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 items-center mb-3">
+              <div className="text-sm text-gray-600 mr-2">Year range (min / max):</div>
+              <input type="number" value={minYear} onChange={e=>{ setPage(1); setMinYear(e.target.value); }} placeholder="min year" className="p-2 border rounded w-32" />
+              <input type="number" value={maxYear} onChange={e=>{ setPage(1); setMaxYear(e.target.value); }} placeholder="max year" className="p-2 border rounded w-32" />
+              <div className="text-xs text-gray-500 ml-2">(uses best-effort year parsing from fields)</div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 text-left cursor-pointer" onClick={()=>toggleSort('site_name')}>Name {sortKey==='site_name'?(sortDir==='asc'?'▲':'▼'):''}</th>
+                    <th className="p-2 text-left cursor-pointer" onClick={()=>toggleSort('site_type')}>Type {sortKey==='site_type'?(sortDir==='asc'?'▲':'▼'):''}</th>
+                    <th className="p-2 text-left">Period</th>
+                    <th className="p-2 text-left">Location</th>
+                    <th className="p-2 text-left">Bibliography</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageItems.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No results. Try clearing filters.</td></tr>}
+                  {pageItems.map(s => (
+                    <tr key={s.id} className={`border-t hover:bg-gray-50 cursor-pointer ${selectedSite?.id===s.id ? 'bg-blue-50' : ''}`} onClick={()=>{ setSelectedSite(s); if (s.latitude && s.longitude) mapRef.current.setView([s.latitude, s.longitude], 10); }}>
+                      <td className="p-2 align-top max-w-[36ch]"><div className="font-semibold">{s.site_name}</div><div className="text-xs text-gray-500">{s.main_reference}</div></td>
+                      <td className="p-2 align-top">{s.site_type}</td>
+                      <td className="p-2 align-top">{s.period || formatYears(s._years)}</td>
+                      <td className="p-2 align-top text-sm">{s.latitude?.toFixed?.(4) || '—' }, {s.longitude?.toFixed?.(4) || '—'}</td>
+                      <td className="p-2 align-top text-sm">
+                        {(s.bibliography || []).slice(0,3).map((b,i)=> <div key={i} className="truncate">{b}</div>)}
+                        {(s.bibliography || []).length > 3 && <div className="text-xs text-gray-500">+{(s.bibliography||[]).length-3} more</div>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              <div className="text-sm text-gray-600">Showing {filtered.length} results — page {page} / {pages}</div>
+              <div className="flex gap-2">
+                <button onClick={()=>setPage(1)} disabled={page===1} className="px-2 py-1 border rounded disabled:opacity-40">First</button>
+                <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1} className="px-2 py-1 border rounded disabled:opacity-40">Prev</button>
+                <button onClick={()=>setPage(p=>Math.min(p+1,pages))} disabled={page===pages} className="px-2 py-1 border rounded disabled:opacity-40">Next</button>
+                <button onClick={()=>setPage(pages)} disabled={page===pages} className="px-2 py-1 border rounded disabled:opacity-40">Last</button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Map + detail */}
+          <aside className="bg-white rounded shadow p-4 flex flex-col gap-3">
+            <div id="map" className="h-80 w-full"></div>
+            <div className="text-sm text-gray-600">Use the rectangle tool on the map (top-left draw icon) to filter by bounding box. Click markers or table rows to open details.</div>
+
+            <div className="border-t pt-2">
+              {selectedSite ? (
+                <div>
+                  <div className="flex gap-3">
+                    <img src={selectedSite.image_url || 'https://placehold.co/200x120?text=No+Image'} alt="" className="w-36 h-24 object-cover rounded" onError={e=>{e.target.onerror=null;e.target.src='https://placehold.co/200x120?text=No+Image'}} />
+                    <div>
+                      <h3 className="font-bold">{selectedSite.site_name}</h3>
+                      <div className="text-xs text-gray-500">{selectedSite.site_type} • {selectedSite.period || formatYears(selectedSite._years)}</div>
+                      <div className="text-sm mt-2 text-gray-800 max-h-28 overflow-auto custom-scrollbar">{selectedSite.description}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <h4 className="font-semibold">Bibliography</h4>
+                    <ul className="list-disc ml-5 max-h-40 overflow-auto custom-scrollbar">
+                      {(selectedSite.bibliography || []).map((b,i) => <li key={i}>{renderBiblioItem(b)}</li>)}
+                    </ul>
+                  </div>
+
+                  {selectedSite.chronometric_data && selectedSite.chronometric_data.length > 0 && (
+                    <div className="mt-3">
+                      <h4 className="font-semibold">Chronometric data (raw)</h4>
+                      <pre className="text-xs bg-gray-100 p-2 rounded max-h-40 overflow-auto custom-scrollbar">{JSON.stringify(selectedSite.chronometric_data, null, 2)}</pre>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={()=>{ if (selectedSite.latitude && selectedSite.longitude) mapRef.current.setView([selectedSite.latitude, selectedSite.longitude], 12); }} className="px-3 py-1 bg-blue-600 text-white rounded">Zoom to site</button>
+                    <button onClick={()=>navigator.clipboard?.writeText(JSON.stringify(selectedSite.raw) )} className="px-3 py-1 border rounded">Copy raw JSON</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-500">Select a site to see details.</div>
+              )}
+            </div>
+          </aside>
+        </div>
+
+        <footer className="mt-6 text-xs text-gray-500">Built to resemble XRONOS-style data browser. Place your JSON at /data/output.json. </footer>
+      </div>
+    );
+  }
+
+  /************* Helper functions *************/
+  function toggleSortKey(currentKey, setterKey, setterDir, key) {
+    // unused in new impl (we used closures), left if needed
+  }
+
+  function normalizeSite(s, idx) {
+    // Accept many common field names and normalize
+    const id = s.id ?? s._id ?? idx;
+    const site_name = s.site_name ?? s.name ?? s.site ?? 'Unknown site';
+    const site_type = s.site_type ?? s.type ?? s.category ?? '';
+    const period = s.period ?? s.date ?? s.timespan ?? '';
+    const latitude = Number(s.latitude ?? s.lat ?? s.lat_deg ?? s.y ?? null);
+    const longitude = Number(s.longitude ?? s.lon ?? s.lng ?? s.lon_deg ?? s.x ?? null);
+    const country = s.country ?? '';
+    const description = s.description ?? s.summary ?? s.note ?? '';
+    const main_reference = s.main_reference ?? s.reference ?? '';
+    const bibliography = Array.isArray(s.bibliography) ? s.bibliography : (s.biblio ?? s.references ?? []);
+    const image_url = s.image_url ?? s.image ?? s.thumbnail ?? s.photo ?? '';
+    const chronometric_data = s.chronometric_data ?? s.chronometric ?? s.dates ?? [];
+    return {
+      id, site_name, site_type, period, latitude, longitude, country,
+      description, main_reference, bibliography, image_url, chronometric_data, raw: s
+    };
+  }
+
+  function parseYearsFromSite(site) {
+    // Try to infer min and max year from fields:
+    // - numeric 'year' or 'start_year'/'end_year'
+    // - 'period' string with 4-digit years
+    // - chronometric_data array with 'bp' or 'year' fields
+    let years = [];
+    const add = (y)=>{ if (Number.isFinite(Number(y))) years.push(Number(y)); };
+
+    if (site.year) add(site.year);
+    if (site.start_year) add(site.start_year);
+    if (site.end_year) add(site.end_year);
+
+    // parse 4-digit years inside period/date strings
+    (String(site.period || '')).replace(/([+-]?\\d{3,4})/g, (m) => { add(m); return m; });
+
+    // chronometric_data: look for calendar years or BP -> convert BP to calendar approx (assuming BP is defined)
+    if (Array.isArray(site.chronometric_data)) {
+      site.chronometric_data.forEach(d => {
+        if (d.year) add(d.year);
+        if (d.calibrated_year) add(d.calibrated_year);
+        if (d.bp && Number.isFinite(Number(d.bp))) {
+          // approximate: BP to calendar year using 1950 baseline -> calendar year = 1950 - BP
+          const val = 1950 - Number(d.bp);
+          add(Math.round(val));
+        }
+        // also attempt to extract years from strings inside chronometric entries
+        Object.values(d || {}).forEach(v => {
+          if (typeof v === 'string') {
+            v.replace(/([+-]?\\d{3,4})/g, (m) => { add(m); return m; });
+          }
+        });
+      });
+    }
+
+    // if none found attempt to extract from main_reference
+    (String(site.main_reference || '')).replace(/([+-]?\\d{3,4})/g, (m)=>{ add(m); return m; });
+
+    if (years.length === 0) return null;
+    return { min: Math.min(...years), max: Math.max(...years) };
+  }
+
+  function formatYears(yobj) {
+    if (!yobj) return '—';
+    return `${yobj.min}${yobj.max && yobj.max !== yobj.min ? ' – ' + yobj.max : ''}`;
+  }
+
+  function renderBiblioItem(b) {
+    if (!b) return null;
+    const s = String(b);
+    const url = s.match(/https?:\\/\\/[^\\s]+/);
+    if (url) return <a href={url[0]} target="_blank" rel="noreferrer" className="text-blue-600 underline">{s.replace(url[0],'').trim() || url[0]}</a>;
+    return <span>{s}</span>;
+  }
+
+  // Mount the app
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
