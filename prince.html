@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Little Prince: An Interactive Celestial Journey</title>
+    
+    <!-- CSS Styles -->
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            outline: none;
+        }
+
+        /* --- Info Panel --- */
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background-color: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+            transform: translateX(-120%);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        #info-panel.visible {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        #info-panel h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+            color: #E0E0E0;
+        }
+
+        #info-panel p {
+            font-size: 1em;
+            line-height: 1.6;
+            color: #BDBDBD;
+        }
+
+        #close-panel-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2em;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        #panel-quote-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-style: italic;
+        }
+        #panel-quote-author {
+            display: block;
+            text-align: right;
+            margin-top: 10px;
+            color: #9E9E9E;
+        }
+
+        /* --- Timeline --- */
+        #timeline {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background-color: rgba(20, 20, 20, 0.85);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        .timeline-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 5px;
+        }
+
+        .timeline-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- Loading Screen --- */
+        #loading-screen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- The canvas where the 3D scene will be rendered -->
+    <canvas id="bg"></canvas>
+
+    <!-- UI Panel for displaying information -->
+    <div id="info-panel">
+        <button id="close-panel-btn">&times;</button>
+        <h2 id="panel-title"></h2>
+        <p id="panel-description"></p>
+        <div id="panel-quote-container">
+            <p id="panel-quote"></p>
+            <span id="panel-quote-author"></span>
+        </div>
+    </div>
+
+    <!-- UI Timeline at the bottom -->
+    <div id="timeline">
+        <div class="timeline-item" data-target="B-612">Home</div>
+        <div class="timeline-item" data-target="The King's Planet">The King</div>
+        <div class="timeline-item" data-target="The Vain Man's Planet">The Vain Man</div>
+        <div class="timeline-item" data-target="Earth">Earth</div>
+    </div>
+
+    <!-- Loading screen -->
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <p>The stars are coming into view...</p>
+    </div>
+
+    <!-- Import necessary libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+
+    <!-- Main Application Logic (all JS modules combined) -->
+    <script type="module">
+        // --- MODULE: CelestialBody.js ---
+        class CelestialBody {
+            constructor(name, size, texturePath, emissiveColor = null) {
+                this.name = name;
+                const geometry = new THREE.SphereGeometry(size, 32, 32);
+                const texture = new THREE.TextureLoader().load(texturePath);
+                
+                const materialConfig = { map: texture };
+                if (emissiveColor) {
+                    materialConfig.emissive = new THREE.Color(emissiveColor);
+                    materialConfig.emissiveMap = texture;
+                    materialConfig.emissiveIntensity = 1.5;
+                }
+
+                const material = new THREE.MeshStandardMaterial(materialConfig);
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.name = name;
+            }
+        }
+
+        // --- MODULE: SceneManager.js ---
+        class SceneManager {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 20, 100);
+
+                this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+                this.scene.add(ambientLight);
+
+                window.addEventListener('resize', () => this.onWindowResize(), false);
+            }
+
+            add(object) { this.scene.add(object); }
+            render() { this.renderer.render(this.scene, this.camera); }
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        // --- MODULE: CameraControls.js ---
+        class CameraControls {
+            constructor(camera) { this.camera = camera; }
+            focusOn(targetObject) {
+                const targetPosition = new THREE.Vector3();
+                targetObject.getWorldPosition(targetPosition);
+
+                const objectSize = new THREE.Box3().setFromObject(targetObject).getSize(new THREE.Vector3()).length();
+                const cameraOffset = objectSize * 3;
+                const offsetPosition = new THREE.Vector3(targetPosition.x, targetPosition.y + cameraOffset / 4, targetPosition.z + cameraOffset);
+
+                gsap.to(this.camera.position, {
+                    duration: 2.5,
+                    x: offsetPosition.x,
+                    y: offsetPosition.y,
+                    z: offsetPosition.z,
+                    ease: "power3.inOut",
+                    onUpdate: () => this.camera.lookAt(targetPosition)
+                });
+            }
+        }
+
+        // --- MODULE: UIManager.js ---
+        class UIManager {
+            constructor() {
+                this.infoPanel = document.getElementById('info-panel');
+                this.titleElement = document.getElementById('panel-title');
+                this.descriptionElement = document.getElementById('panel-description');
+                this.quoteElement = document.getElementById('panel-quote');
+                this.authorElement = document.getElementById('panel-quote-author');
+                
+                document.getElementById('close-panel-btn').addEventListener('click', () => this.hidePanel());
+                
+                this.timelineItems = document.querySelectorAll('.timeline-item');
+                this.timelineItems.forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (this.onTimelineClick) this.onTimelineClick(e.target.dataset.target);
+                    });
+                });
+            }
+
+            showPanel(data) {
+                this.titleElement.textContent = data.name || '';
+                this.descriptionElement.textContent = data.description || '';
+                this.quoteElement.textContent = `"${data.quote}"` || '';
+                this.authorElement.textContent = "- The Little Prince";
+                this.infoPanel.classList.add('visible');
+            }
+
+            hidePanel() { this.infoPanel.classList.remove('visible'); }
+            hideLoadingScreen() {
+                const loadingScreen = document.getElementById('loading-screen');
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => loadingScreen.style.display = 'none', 1000);
+            }
+        }
+
+        // --- MODULE: InteractionManager.js ---
+        class InteractionManager {
+            constructor(camera, objects) {
+                this.camera = camera;
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.clickableObjects = objects;
+                window.addEventListener('click', (event) => this.onMouseClick(event), false);
+            }
+
+            onMouseClick(event) {
+                if (event.target.closest('#info-panel') || event.target.closest('#timeline')) {
+                    return; // Don't raycast if clicking on UI
+                }
+                this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.clickableObjects, true);
+                if (intersects.length > 0 && this.onClick) {
+                    this.onClick(intersects[0].object);
+                }
+            }
+        }
+
+        // --- MAIN APPLICATION LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('bg');
+            const sceneManager = new SceneManager(canvas);
+            const cameraControls = new CameraControls(sceneManager.camera);
+            const uiManager = new UIManager();
+            const celestialBodies = [];
+
+            const planetsData = {
+                "Sun": { name: "Sun", texture: 'textures/sun.jpg', size: 10, position: [0, 0, 0], emissive: 0xffff00 },
+                "B-612": { name: "B-612", texture: 'textures/b612.jpg', size: 1, position: [20, 0, 0], description: "The home of the Little Prince, no bigger than a house. It has three volcanoes, two active and one extinct, and one very special rose.", quote: "It is the time you have wasted for your rose that makes your rose so important." },
+                "The King's Planet": { name: "The King's Planet", texture: 'textures/king_planet.jpg', size: 1.5, position: [-35, 5, -10], description: "The first planet the prince visited. It was inhabited by a king who claimed to rule over everything.", quote: "One must command from each what each can perform." },
+                "The Vain Man's Planet": { name: "The Vain Man's Planet", texture: 'textures/vain_planet.jpg', size: 1.2, position: [50, -8, 20], description: "This planet was inhabited by a conceited man who wanted nothing but admiration.", quote: "The conceited men hear nothing but praise." },
+                "Earth": { name: "Earth", texture: 'textures/earth.jpg', size: 3, position: [-70, 10, -50], description: "The seventh planet. It is here the prince learned about what is essential from a fox in a field of roses.", quote: "What is essential is invisible to the eye." }
+            };
+
+            function init() {
+                const starfieldTexture = new THREE.TextureLoader().load('textures/starfield.jpg');
+                sceneManager.scene.background = starfieldTexture;
+
+                for (const key in planetsData) {
+                    const data = planetsData[key];
+                    const body = new CelestialBody(data.name, data.size, data.texture, data.emissive);
+                    body.mesh.position.set(...data.position);
+                    body.mesh.userData = data;
+                    sceneManager.add(body.mesh);
+                    celestialBodies.push(body);
+                }
+                
+                const sunLight = new THREE.PointLight(0xffffff, 1.5, 500);
+                sceneManager.add(sunLight);
+
+                const interactionManager = new InteractionManager(sceneManager.camera, sceneManager.scene.children);
+                
+                interactionManager.onClick = (intersectedObject) => {
+                    if (intersectedObject.userData.name !== "Sun") {
+                        cameraControls.focusOn(intersectedObject);
+                        uiManager.showPanel(intersectedObject.userData);
+                    }
+                };
+
+                uiManager.onTimelineClick = (targetName) => {
+                    const targetObject = sceneManager.scene.getObjectByName(targetName);
+                    if (targetObject) {
+                        cameraControls.focusOn(targetObject);
+                        uiManager.showPanel(targetObject.userData);
+                    }
+                };
+
+                uiManager.hideLoadingScreen();
+                animate();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                celestialBodies.forEach(body => {
+                    if (body.name !== 'Sun') body.mesh.rotation.y += 0.001;
+                });
+                sceneManager.render();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
