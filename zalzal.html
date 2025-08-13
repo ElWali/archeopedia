@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EarthSense - Mobile Earthquake Sensor Network</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+/* Styles remain mostly unchanged from previous version */
+* {margin:0;padding:0;box-sizing:border-box;}
+body {font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);color:#333;min-height:100vh;overflow:hidden;}
+.header {background:rgba(0,0,0,0.2);backdrop-filter:blur(10px);padding:1rem;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);position:relative;z-index:1000;}
+.header h1 {color:white;font-size:1.8rem;margin-bottom:0.25rem;font-weight:600;}
+.header p {color: rgba(255,255,255,0.8); font-size:0.9rem;}
+.container {display:flex;height:calc(100vh - 100px);position:relative;}
+.sidebar {width:320px;background: rgba(255,255,255,0.98);padding:1.25rem;overflow-y:auto;box-shadow:2px 0 20px rgba(0,0,0,0.15);z-index:999;}
+.map-container {flex:1;position:relative;background:#f0f0f0;}
+#map {width:100%;height:100%;border:none;}
+.sensor-status {background: linear-gradient(135deg,#f8f9fa,#e9ecef);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;border-left:4px solid var(--status-color,#dc3545);box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+.sensor-status.active {--status-color:#28a745;background:linear-gradient(135deg,#d4edda,#c3e6cb);}
+.sensor-status h3 {font-size:1.1rem;margin-bottom:0.5rem;color:#495057;}
+.btn {width:100%;padding:0.875rem;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s ease;margin-bottom:1rem;position:relative;overflow:hidden;}
+.btn:before {content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transition:left 0.5s;}
+.btn:hover:before {left:100%;}
+.btn-primary {background:linear-gradient(135deg,#007bff,#0056b3);color:white;box-shadow:0 4px 15px rgba(0,123,255,0.3);}
+.btn-primary:hover {transform: translateY(-2px);box-shadow:0 6px 20px rgba(0,123,255,0.4);}
+.btn-danger {background:linear-gradient(135deg,#dc3545,#c82333);color:white;box-shadow:0 4px 15px rgba(220,53,69,0.3);}
+.btn-danger:hover {transform: translateY(-2px);box-shadow:0 6px 20px rgba(220,53,69,0.4);}
+.btn:disabled {opacity:0.6;cursor:not-allowed;transform:none !important;}
+.metrics {display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.metric {background:white;padding:1.25rem;border-radius:12px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.05);}
+.metric-value {font-size:1.75rem;font-weight:700;color:#2a5298;display:block;}
+.metric-label {font-size:0.8rem;color:#6c757d;margin-top:0.5rem;text-transform:uppercase;letter-spacing:0.5px;}
+.seismic-reading {background: linear-gradient(135deg,#ff6b6b,#ee5a24);color:white;padding:1.25rem;border-radius:12px;margin-bottom:1.5rem;text-align:center;box-shadow:0 4px 20px rgba(238,90,36,0.3);}
+.reading-value {font-size:2.25rem;font-weight:700;text-shadow:0 2px 4px rgba(0,0,0,0.2);}
+.activity-log {background:white;border-radius:12px;padding:1.25rem;max-height:250px;overflow-y:auto;box-shadow:0 4px 15px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.05);}
+.activity-log h4 {margin-bottom:1rem;color:#495057;font-size:1.1rem;}
+.activity-item {padding:0.75rem 0;border-bottom:1px solid #f1f3f4;font-size:0.85rem;line-height:1.4;}
+.activity-item:last-child {border-bottom:none;}
+.timestamp {color:#6c757d;font-size:0.75rem;margin-top:0.25rem;}
+.error-message {background:#f8d7da;color:#721c24;padding:0.75rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;border:1px solid #f5c6cb;}
+.success-message {background:#d4edda;color:#155724;padding:0.75rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;border:1px solid #c3e6cb;}
+.pulse {animation:pulse 2s infinite;}
+@keyframes pulse {0% {transform: scale(1); opacity:1;}50% {transform: scale(1.1); opacity:0.7;}100% {transform: scale(1); opacity:1;}}
+.loading {display:inline-block;width:16px;height:16px;border:2px solid #f3f3f3;border-top:2px solid #007bff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin {0% {transform:rotate(0deg);}100% {transform:rotate(360deg);}}
+@media (max-width:768px){.container{flex-direction:column;}.sidebar{width:100%;height:60vh;max-height:none;}.map-container{height:40vh;}.metrics{grid-template-columns:1fr;}.header h1{font-size:1.5rem;}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🌍 EarthSense</h1>
+<p>Real-time Crowdsourced Seismic Monitoring</p>
+</div>
+
+<div class="container">
+<div class="sidebar">
+<div id="sensor-status" class="sensor-status">
+<h3>📱 Sensor Status</h3>
+<p id="status-text">Ready to start monitoring</p>
+<div id="permissions-info" style="margin-top:0.5rem;">
+<small id="permissions-text">Requires: Motion sensors, Location</small>
+</div>
+</div>
+
+<div id="error-container"></div>
+
+<button id="start-btn" class="btn btn-primary">
+<span id="start-btn-text">🚀 Start Monitoring</span>
+</button>
+<button id="stop-btn" class="btn btn-danger" style="display:none;">⏹️ Stop Monitoring</button>
+
+<div class="metrics">
+<div class="metric">
+<span class="metric-value" id="active-sensors">127</span>
+<div class="metric-label">Active Sensors</div>
+</div>
+<div class="metric">
+<span class="metric-value" id="sensitivity-level">High</span>
+<div class="metric-label">Sensitivity</div>
+</div>
+</div>
+
+<div id="current-reading" class="seismic-reading" style="display:none;">
+<div style="font-size:0.9rem;margin-bottom:0.5rem;">Current Acceleration</div>
+<div class="reading-value" id="acceleration-value">0.00</div>
+<div style="font-size:0.8rem;margin-top:0.25rem;">m/s²</div>
+</div>
+
+<div class="activity-log">
+<h4>📊 Recent Activity</h4>
+<div id="log-content">
+<div class="activity-item">
+<div>🔧 System initialized and ready</div>
+<div class="timestamp" id="init-time"></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="map-container">
+<div id="map"></div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+class EarthquakeSensorApp {
+constructor() {
+this.state={isMonitoring:false,hasPermissions:{motion:false,location:false},userLocation:null,sensorData:[],activeSensors:127+Math.floor(Math.random()*50)};
+this.motionHandler=null;
+this.lastReading={x:0,y:0,z:0};
+this.map=null;
+this.userMarker=null;
+this.seismicMarkers=[];
+this.sensorUpdater=null;
+
+// Magnitude-based sounds
+this.sounds = {
+small: ['https://www.zapsplat.com/wp-content/uploads/2015/sounds/earthquake_rumble_01.mp3'],
+medium: ['https://www.zapsplat.com/wp-content/uploads/2015/sounds/earthquake_rumble_02.mp3'],
+strong: ['https://www.zapsplat.com/wp-content/uploads/2015/sounds/earthquake_rumble_03.mp3']
+};
+for(const key in this.sounds){this.sounds[key]=this.sounds[key].map(url=>new Audio(url));}
+
+this.init();
+}
+
+async init() {
+try{await this.initializeMap(); this.setupEventListeners(); this.updateUI(); this.startNetworkSimulation(); this.checkCapabilities();
+this.addLogEntry('✅ Application initialized successfully'); document.getElementById('init-time').textContent=new Date().toLocaleTimeString();}
+catch(e){this.handleError('Initialization failed',e);}
+}
+
+async initializeMap() {
+return new Promise((resolve,reject)=>{
+try{
+this.map=L.map('map',{center:[37.0902,-119.4179],zoom:6,zoomControl:true,attributionControl:true});
+const tileLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap contributors'});
+tileLayer.on('tileerror',(e)=>{console.warn('Tile loading error:',e);});
+tileLayer.addTo(this.map);
+this.map.whenReady(()=>{this.addInitialSeismicData(); resolve();});
+}catch(e){reject(e);}
+});
+}
+
+checkCapabilities(){
+const info=[];
+if('DeviceMotionEvent' in window){info.push('✓ Motion sensors available');} else {info.push('✗ Motion sensors not supported');}
+if('geolocation' in navigator){info.push('✓ GPS location available');} else {info.push('✗ GPS not supported');}
+if(location.protocol==='https:'){info.push('✓ Secure connection');} else {this.showError('HTTPS required for sensor access'); info.push('✗ Insecure connection');}
+document.getElementById('permissions-text').innerHTML=info.join('<br>');
+}
+
+setupEventListeners(){
+document.getElementById('start-btn').addEventListener('click',()=>this.handleStartClick());
+document.getElementById('stop-btn').addEventListener('click',()=>this.handleStopClick());
+document.addEventListener('visibilitychange',()=>{if(document.hidden && this.state.isMonitoring){this.addLogEntry('⚠️ App backgrounded - sensor accuracy may be reduced');}});
+}
+
+async handleStartClick(){
+const startBtn=document.getElementById('start-btn'); const startBtnText=document.getElementById('start-btn-text');
+startBtn.disabled=true; startBtnText.innerHTML='<span class="loading"></span> Starting...';
+try{await this.requestPermissions(); await this.startMonitoring(); this.addLogEntry('🚀 Monitoring started successfully');}
+catch(e){this.handleError('Failed to start monitoring',e); startBtn.disabled=false; startBtnText.textContent='🚀 Start Monitoring';}
+}
+
+handleStopClick(){this.stopMonitoring(); this.addLogEntry('⏹️ Monitoring stopped');}
+
+async requestPermissions(){
+const errors=[];
+if('DeviceMotionEvent' in window && typeof DeviceMotionEvent.requestPermission==='function'){
+try{const response=await DeviceMotionEvent.requestPermission();
+if(response==='granted'){this.state.hasPermissions.motion=true;} else {errors.push('Motion permission denied');}
+}catch(e){errors.push('Motion permission request failed');}}
+else if('DeviceMotionEvent' in window){this.state.hasPermissions.motion=true;} else {errors.push('Motion not available');}
+
+if('geolocation' in navigator){
+await new Promise((resolve,reject)=>{
+navigator.geolocation.getCurrentPosition(pos=>{
+this.state.userLocation=[pos.coords.latitude,pos.coords.longitude]; resolve();
+},err=>{errors.push('Location permission denied'); resolve();});
+});
+this.state.hasPermissions.location=this.state.userLocation!=null;
+}
+if(errors.length>0){this.showError(errors.join('<br>'));}
+}
+
+async startMonitoring() {
+this.state.isMonitoring=true;
+document.getElementById('start-btn').style.display='none';
+document.getElementById('stop-btn').style.display='block';
+document.getElementById('current-reading').style.display='block';
+this.motionHandler=this.handleMotion.bind(this);
+window.addEventListener('devicemotion',this.motionHandler);
+this.startSensorUpdates();
+}
+
+stopMonitoring(){
+this.state.isMonitoring=false;
+document.getElementById('start-btn').style.display='block';
+document.getElementById('stop-btn').style.display='none';
+window.removeEventListener('devicemotion',this.motionHandler);
+if(this.sensorUpdater){clearInterval(this.sensorUpdater);}
+}
+
+handleMotion(e){
+const acc=e.accelerationIncludingGravity||e.acceleration;
+if(!acc) return;
+const magnitude=Math.sqrt(Math.pow(acc.x||0,2)+Math.pow(acc.y||0,2)+Math.pow(acc.z||0,2));
+this.lastReading={x:acc.x||0, y:acc.y||0, z:acc.z||0, magnitude};
+document.getElementById('acceleration-value').textContent=magnitude.toFixed(2);
+if(magnitude>12){this.triggerSeismicEvent(magnitude);}
+}
+
+triggerSeismicEvent(magnitude){
+const lat=this.state.userLocation?this.state.userLocation[0]+(Math.random()-0.5)*0.5:37.0902+(Math.random()-0.5)*1;
+const lng=this.state.userLocation?this.state.userLocation[1]+(Math.random()-0.5)*0.5:-119.4179+(Math.random()-0.5)*1;
+const marker=L.circleMarker([lat,lng],{radius:8,fillColor:'#ff0000',color:'#fff',weight:2,fillOpacity:0.8}).addTo(this.map);
+marker.bindPopup(`📍 Seismic Event<br>Magnitude: ${magnitude.toFixed(1)}<br>Time: ${new Date().toLocaleTimeString()}`);
+this.seismicMarkers.push(marker);
+this.map.setView([lat,lng],7);
+this.addLogEntry(`🌐 Seismic activity detected! Magnitude: ${magnitude.toFixed(1)}`);
+this.playMagnitudeSound(magnitude);
+}
+
+playMagnitudeSound(mag){
+let category;
+if(mag<=2.5) category='small';
+else if(mag<=4.5) category='medium';
+else category='strong';
+const sounds=this.sounds[category];
+if(sounds && sounds.length>0){const sound=sounds[Math.floor(Math.random()*sounds.length)]; sound.play();}
+}
+
+startSensorUpdates(){
+this.sensorUpdater=setInterval(()=>{document.getElementById('active-sensors').textContent=this.state.activeSensors+Math.floor(Math.random()*3);},3000);
+}
+
+startNetworkSimulation(){
+setInterval(()=>{
+const magnitude=(Math.random()*5+1).toFixed(1);
+this.triggerSeismicEvent(parseFloat(magnitude));
+},12000);
+}
+
+addInitialSeismicData(){
+const demoData=[[34.0522,-118.2437,3.2],[36.1699,-115.1398,2.8],[37.7749,-122.4194,4.1]];
+demoData.forEach(d=>{
+const marker=L.circleMarker([d[0],d[1]],{radius:6,fillColor:'#007bff',color:'#fff',weight:1,fillOpacity:0.6}).addTo(this.map);
+marker.bindPopup(`🌐 Seismic Event<br>Magnitude: ${d[2]}<br>Time: ${new Date().toLocaleTimeString()}`);
+this.seismicMarkers.push(marker);
+});
+}
+
+addLogEntry(message){
+const logContainer=document.getElementById('log-content');
+const div=document.createElement('div');
+div.className='activity-item';
+div.innerHTML=`<div>${message}</div><div class="timestamp">${new Date().toLocaleTimeString()}</div>`;
+logContainer.prepend(div);
+}
+
+showError(message){document.getElementById('error-container').innerHTML=`<div class="error-message">${message}</div>`;}
+updateUI(){}
+handleError(msg,e){console.error(msg,e); this.showError(msg);}
+}
+
+new EarthquakeSensorApp();
+</script>
+</body>
+</html>
