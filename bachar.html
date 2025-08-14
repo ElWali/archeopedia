@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Little Prince - Interactive Experience</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #059669;
+            --accent: #d946ef;
+            --text: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --bg: #0f172a;
+            --bg-secondary: #1e293b;
+            --border: #334155;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(217, 70, 239, 0.1) 0%, transparent 40%);
+        }
+        
+        .container {
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Navigation Bar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 200px;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .page-counter {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 500;
+        }
+        
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        
+        .control-btn:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .play-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        
+        .play-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 30px;
+            padding: 0.25rem;
+        }
+        
+        .zoom-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        
+        .zoom-btn:hover {
+            background: var(--primary);
+        }
+        
+        .zoom-value {
+            min-width: 40px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 8rem 2rem 6rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .story-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+        
+        @media (max-width: 1024px) {
+            .story-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .story-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .chapter-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .chapter-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .chapter-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .story-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: white;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, white, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        @media (max-width: 768px) {
+            .story-title {
+                font-size: 2.5rem;
+            }
+        }
+        
+        .title-underline {
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+            margin-bottom: 2rem;
+        }
+        
+        .story-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: var(--text);
+            font-weight: 400;
+            text-align: justify;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .story-text {
+                font-size: 1.1rem;
+                line-height: 1.7;
+            }
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .progress-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: var(--transition);
+        }
+        
+        .progress-dot.active {
+            background: var(--primary);
+            transform: scale(1.2);
+        }
+        
+        .stats {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .story-visual {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            height: 500px;
+        }
+        
+        .visual-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            overflow: hidden;
+        }
+        
+        .visual-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.8s ease;
+            opacity: 0;
+        }
+        
+        .visual-image.active {
+            opacity: 1;
+        }
+        
+        .visual-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(217, 70, 239, 0.2));
+            pointer-events: none;
+        }
+        
+        .visual-controls {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 10;
+        }
+        
+        .visual-chip {
+            padding: 0.5rem 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .visual-chip.zoom {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+        }
+        
+        .hotspot {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            background: rgba(79, 70, 229, 0.1);
+            cursor: pointer;
+            animation: pulse 3s infinite;
+            opacity: 0.7;
+            transition: var(--transition);
+        }
+        
+        .hotspot:hover {
+            transform: scale(1.2);
+            opacity: 1;
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        .hotspot::after {
+            content: '?';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .hotspot-info {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            width: 200px;
+            color: var(--text);
+            font-size: 0.9rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            margin-bottom: 0.5rem;
+        }
+        
+        .hotspot:hover .hotspot-info {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .hotspot-info::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid var(--border);
+        }
+        
+        .hotspot-info-inner {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hotspot-info-title {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 3D Globe */
+        .globe-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            opacity: 0.3;
+        }
+        
+        /* Bottom Controls */
+        .bottom-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+        
+        .controls-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .quick-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .view-options {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .view-select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--text);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        
+        .view-select:hover {
+            border-color: var(--primary);
+        }
+        
+        /* Animation Classes */
+        .fade-enter {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .fade-exit {
+            opacity: 1;
+        }
+        
+        .fade-exit-active {
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 2rem;
+            animation: spin 2s linear infinite;
+        }
+        
+        .loading-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: var(--text);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        
+        .loading-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Audio Controls */
+        .audio-controls {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .audio-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        
+        .audio-btn:hover {
+            background: var(--primary);
+        }
+        
+        .audio-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .logo-text {
+                font-size: 1.5rem;
+            }
+            
+            .nav-controls {
+                gap: 1rem;
+            }
+            
+            .progress-container {
+                display: none;
+            }
+            
+            .main-content {
+                padding: 6rem 1rem 5rem;
+            }
+            
+            .story-grid {
+                gap: 2rem;
+            }
+            
+            .bottom-controls {
+                padding: 1rem;
+            }
+            
+            .controls-inner {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .quick-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+        
+        /* Dark mode toggle */
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z" fill="url(#gradient)" />
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#4f46e5"/>
+                        <stop offset="100%" stop-color="#d946ef"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        <div class="loading-text">Loading The Little Prince Experience</div>
+        <div class="loading-bar">
+            <div class="loading-fill" id="loadingFill"></div>
+        </div>
+    </div>
+
+    <!-- Audio Controls -->
+    <div class="audio-controls">
+        <div class="audio-btn" id="musicToggle">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.495a1 1 0 010 1.414l-1.586 1.586a3 3 0 014.242 4.243L19 9l-1.757.757a3 3 0 01-4.242-4.243l1.586-1.586a1 1 0 011.414 0zm-1.414 8.488l-1.586 1.586a3 3 0 01-4.243-4.242L7 11l1.757-.757a3 3 0 014.242 4.243z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="logo">
+                <div class="logo-icon">LP</div>
+                <div class="logo-text">The Little Prince</div>
+            </div>
+            
+            <div class="nav-controls">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="page-counter" id="pageCounter">01 / 20</div>
+                </div>
+                
+                <button class="control-btn" id="prevBtn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M15 19l-7-7 7-7" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                
+                <button class="play-btn" id="playBtn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" id="playIcon">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="playText">Play</span>
+                </button>
+                
+                <button class="control-btn" id="nextBtn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9 5l7 7-7 7" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoomOutBtn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <div class="zoom-value" id="zoomValue">100%</div>
+                    <button class="zoom-btn" id="zoomInBtn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <button class="theme-toggle" id="themeToggle">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="story-grid">
+                <div class="story-content">
+                    <div class="chapter-info">
+                        <div class="chapter-dot"></div>
+                        <div class="chapter-label" id="chapterLabel">Chapter 1</div>
+                    </div>
+                    
+                    <h1 class="story-title" id="storyTitle">The Aviator's Story</h1>
+                    <div class="title-underline"></div>
+                    
+                    <p class="story-text" id="storyText">Once when I was six years old I saw a magnificent picture in a book, called True Stories from Nature, about the primeval forest. It was a picture of a boa constrictor in the act of swallowing an animal. In the book it said: 'Boa constrictors swallow their prey whole, without chewing it. After that they are not able to move, and they sleep through the six months that they need for digestion.'</p>
+                    
+                    <div class="progress-info">
+                        <div class="progress-dots" id="progressDots">
+                            <!-- Dots will be generated by JavaScript -->
+                        </div>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Interactive Story</span>
+                            </div>
+                            <div class="stat-item">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>20 Chapters</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="story-visual">
+                    <div class="visual-container">
+                        <div class="globe-container" id="globeContainer"></div>
+                        <img src="https://placehold.co/800x600/4f46e5/ffffff?text=Boa+Constrictor" alt="Boa Constrictor" class="visual-image active" id="visualImage">
+                        <div class="visual-overlay"></div>
+                        
+                        <div class="visual-controls">
+                            <div class="visual-chip">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Chapter 1</span>
+                            </div>
+                            <div class="visual-chip zoom">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                                </svg>
+                                <span id="zoomChipValue">100%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Interactive Hotspots -->
+                        <div class="hotspot" style="top: 30%; left: 40%;">
+                            <div class="hotspot-info">
+                                <div class="hotspot-info-inner">
+                                    <div class="hotspot-info-title">Boa Constrictor</div>
+                                    <div>The illustration that inspired the aviator's childhood drawing.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hotspot" style="top: 60%; left: 60%;">
+                            <div class="hotspot-info">
+                                <div class="hotspot-info-inner">
+                                    <div class="hotspot-info-title">Primeval Forest</div>
+                                    <div>The setting of the original illustration from 'True Stories from Nature'.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
+            <div class="controls-inner">
+                <div class="quick-nav">
+                    <a href="#" class="nav-link">Start Over</a>
+                    <a href="#" class="nav-link">Table of Contents</a>
+                    <a href="#" class="nav-link">About the Author</a>
+                    <a href="#" class="nav-link">Educational Resources</a>
+                </div>
+                
+                <div class="view-options">
+                    <span>View:</span>
+                    <select class="view-select" id="viewSelect">
+                        <option value="story">Story Mode</option>
+                        <option value="timeline">Timeline View</option>
+                        <option value="map">Interactive Map</option>
+                        <option value="characters">Character Gallery</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Story data
+        const storyData = [
+            {
+                title: "The Aviator's Story",
+                chapter: "Chapter 1",
+                text: "Once when I was six years old I saw a magnificent picture in a book, called True Stories from Nature, about the primeval forest. It was a picture of a boa constrictor in the act of swallowing an animal. In the book it said: 'Boa constrictors swallow their prey whole, without chewing it. After that they are not able to move, and they sleep through the six months that they need for digestion.'",
+                image: "https://placehold.co/800x600/4f46e5/ffffff?text=Boa+Constrictor",
+                hotspots: [
+                    { top: "30%", left: "40%", title: "Boa Constrictor", description: "The illustration that inspired the aviator's childhood drawing." },
+                    { top: "60%", left: "60%", title: "Primeval Forest", description: "The setting of the original illustration from 'True Stories from Nature'." }
+                ]
+            },
+            {
+                title: "The Drawing That Failed",
+                chapter: "Chapter 1",
+                text: "I pondered deeply, then, over the adventures of the jungle. And after some work with a colored pencil I succeeded in making my first drawing. My Drawing Number One. I showed my masterpiece to the grown-ups, and asked them whether the drawing frightened them. But they answered: 'Frighten? Why should any one be frightened by a hat?'",
+                image: "https://placehold.co/800x600/059669/ffffff?text=Drawing+of+Boa",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Drawing", description: "The aviator's first attempt at drawing a boa constrictor digesting an elephant." },
+                    { top: "70%", left: "30%", title: "Grown-ups", description: "Adults who couldn't understand the child's imagination." }
+                ]
+            },
+            {
+                title: "The Little Prince Appears",
+                chapter: "Chapter 2",
+                text: "So I lived my life alone, without anyone that I could really talk to, until I had an accident with my plane in the Desert of Sahara, six years ago. Something broke in my engine. And as I had no mechanic and no passengers with me, I set about repairing it all by myself. It was a question of life or death for me: I had scarcely enough drinking water to last a week.",
+                image: "https://placehold.co/800x600/dc2626/ffffff?text=Desert+Plane",
+                hotspots: [
+                    { top: "25%", left: "45%", title: "The Plane", description: "The aviator's crashed plane in the Sahara desert." },
+                    { top: "65%", left: "55%", title: "The Little Prince", description: "The mysterious child who appears in the desert." }
+                ]
+            },
+            {
+                title: "The First Meeting",
+                chapter: "Chapter 2",
+                text: "And in the moment of great despair I was startled by a little voice saying: 'Please... draw me a sheep!' I looked up, and saw a most extraordinary small person standing there and studying me intently. Later I was able to make a perfect drawing of him. But my drawing isn't as beautiful as he was.",
+                image: "https://placehold.co/800x600/7c3aed/ffffff?text=Little+Prince",
+                hotspots: [
+                    { top: "35%", left: "50%", title: "The Little Prince", description: "The mysterious child from another planet." },
+                    { top: "75%", left: "40%", title: "The Request", description: "'Please... draw me a sheep!'" }
+                ]
+            },
+            {
+                title: "The Asteroid B-612",
+                chapter: "Chapter 3",
+                text: "The little prince came from a planet that was scarcely any bigger than a house! It would not be difficult to describe it. When a volcano is active, it is well-maintained. Mine was active. I had to sweep out the active volcanoes. I had three volcanoes. The two active ones, and the one that was extinct. But one never knows.",
+                image: "https://placehold.co/800x600/0891b2/ffffff?text=Asteroid+B-612",
+                hotspots: [
+                    { top: "30%", left: "40%", title: "Volcano", description: "One of the three volcanoes on the little prince's planet." },
+                    { top: "60%", left: "60%", title: "Planet B-612", description: "The tiny asteroid home of the little prince." }
+                ]
+            },
+            {
+                title: "The Baobabs",
+                chapter: "Chapter 5",
+                text: "On the planet of the little prince there were also baobabs. The baobab is a very useful tree, but it can also be very dangerous. When a baobab starts growing, it's hard to get rid of it. It spreads over the whole planet and can make it burst. That's why it's very important to pull up the baobabs when they're still small.",
+                image: "https://placehold.co/800x600/ea580c/ffffff?text=Baobab+Trees",
+                hotspots: [
+                    { top: "25%", left: "35%", title: "Baobab Sapling", description: "A young baobab that must be pulled up before it grows too large." },
+                    { top: "65%", left: "65%", title: "Planet's Surface", description: "The fragile surface of the little prince's planet." }
+                ]
+            },
+            {
+                title: "The Rose",
+                chapter: "Chapter 4",
+                text: "One day there came up from the planet's soil a most remarkable seed. Nobody knew where it came from. It grew into a plant that was not like any other plant on the planet. It was a flower with a lovely scent and beautiful petals. But she was very vain and demanding. She told the little prince that she was the only one of her kind in all the universe.",
+                image: "https://placehold.co/800x600/be185d/ffffff?text=The+Rose",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Rose", description: "The beautiful but vain flower who captured the little prince's heart." },
+                    { top: "70%", left: "30%", title: "Glass Globe", description: "Used to protect the rose from drafts and insects." }
+                ]
+            },
+            {
+                title: "The Departure",
+                chapter: "Chapter 4",
+                text: "The little prince decided to leave his planet. He was sad to go, but the rose had hurt his feelings. 'I was not able to understand anything then,' he said. 'I should have judged her according to her acts and not her words. She gave me her fragrance and her radiance. I should never have run away from her... I should have guessed all the affection that was hidden in her silly little tricks.'",
+                image: "https://placehold.co/800x600/16a34a/ffffff?text=Leaving+Home",
+                hotspots: [
+                    { top: "30%", left: "45%", title: "Final Goodbye", description: "The little prince's farewell to his rose." },
+                    { top: "65%", left: "55%", title: "Journey Begins", description: "The start of the little prince's interplanetary travels." }
+                ]
+            },
+            {
+                title: "The King",
+                chapter: "Chapter 10",
+                text: "The first planet was inhabited by a king. He was seated on a simple throne and dressed in royal purple. 'Ah! Here is a subject,' the king cried out, when he saw the little prince coming. 'On my planet,' the king said to the little prince, 'I can order anything I like. But I must order reasonable things.'",
+                image: "https://placehold.co/800x600/78350f/ffffff?text=The+King",
+                hotspots: [
+                    { top: "35%", left: "50%", title: "The King", description: "Ruler of a planet with no subjects but the little prince." },
+                    { top: "70%", left: "40%", title: "Empty Kingdom", description: "A planet with only one inhabitant besides the king." }
+                ]
+            },
+            {
+                title: "The Vain Man",
+                chapter: "Chapter 11",
+                text: "The second planet was inhabited by a vain man. 'Ah! Ah! I am about to receive a visit from an admirer!' he cried out from afar, when he saw the little prince coming. For, to the vain man, all the other men are admirers. 'Do you admire me?' he demanded of the little prince.",
+                image: "https://placehold.co/800x600/991b1b/ffffff?text=Vain+Man",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Vain Man", description: "Who believes everyone he meets is an admirer." },
+                    { top: "75%", left: "60%", title: "Applause", description: "What the vain man constantly seeks from others." }
+                ]
+            },
+            {
+                title: "The Drunkard",
+                chapter: "Chapter 12",
+                text: "The third planet was inhabited by a drunkard. 'What are you doing there?' the little prince asked the drunkard, who was silently sitting before a collection of empty bottles and a collection of full ones. 'I am drinking,' replied the drunkard, with a mournful air. 'Why are you drinking?' 'To forget,' replied the drunkard. 'To forget what?' 'To forget that I am ashamed,' muttered the drunkard, sinking into a deep sadness.",
+                image: "https://placehold.co/800x600/1e1b4b/ffffff?text=The+Drunkard",
+                hotspots: [
+                    { top: "30%", left: "40%", title: "Empty Bottles", description: "Evidence of the drunkard's endless cycle." },
+                    { top: "65%", left: "60%", title: "Full Bottles", description: "The means to continue forgetting." }
+                ]
+            },
+            {
+                title: "The Businessman",
+                chapter: "Chapter 13",
+                text: "The fourth planet belonged to a businessman. This man was so busy counting his stars that he did not even look up when the little prince arrived. 'Good morning,' said the little prince. 'Your cigarette is going out.' 'Three and two make five. Five and seven make twelve. Twelve and three make fifteen. Good morning. Fifteen and seven make twenty-two. Twenty-two and six make twenty-eight. I have no time to relight it. Twenty-six and five make thirty-one. Phew! That makes 501 million, six hundred twenty-two thousand, seven hundred thirty-one.'",
+                image: "https://placehold.co/800x600/0284c7/ffffff?text=Businessman+Stars",
+                hotspots: [
+                    { top: "35%", left: "50%", title: "Counting Stars", description: "The businessman's endless task of counting his property." },
+                    { top: "70%", left: "40%", title: "Star Ownership", description: "Claiming ownership of celestial bodies." }
+                ]
+            },
+            {
+                title: "The Lamplighter",
+                chapter: "Chapter 14",
+                text: "The fifth planet was the smallest of all. It had barely room to hold a lamplighter and a street lamp. 'Good morning,' said the little prince. 'Why have you just put out your lamp?' 'It is the order,' replied the lamplighter. 'Good evening. I will light it again.' 'But why have you just lighted it again?' 'It is the order,' replied the lamplighter. 'I cannot help that. The order is that I put out the lamp when it is morning, and light it when it is evening.'",
+                image: "https://placehold.co/800x600/7c2d12/ffffff?text=Lamplighter",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Lamplighter", description: "Faithfully following orders without question." },
+                    { top: "75%", left: "60%", title: "Street Lamp", description: "The object of the lamplighter's devotion." }
+                ]
+            },
+            {
+                title: "The Geographer",
+                chapter: "Chapter 15",
+                text: "The sixth planet was ten times larger than the last one. It was inhabited by an old gentleman who wrote books. 'Ah! Here is a traveler!' he exclaimed when he saw the little prince coming. 'Where do you come from?' 'From a very small planet,' said the little prince. 'And what is your trade?' 'I am a geographer.' 'What is a geographer?' 'A geographer is a scholar who knows the location of seas, rivers, towns, mountains, and deserts.'",
+                image: "https://placehold.co/800x600/1f2937/ffffff?text=Geographer",
+                hotspots: [
+                    { top: "30%", left: "45%", title: "The Geographer", description: "Scholar who records geographical features but never explores." },
+                    { top: "65%", left: "55%", title: "Maps and Books", description: "The geographer's tools for recording knowledge." }
+                ]
+            },
+            {
+                title: "Arrival on Earth",
+                chapter: "Chapter 16",
+                text: "The seventh planet was the Earth. The Earth is not a planet like the others. It has 111 kings, 7,000 geographers, 900,000 businessmen, 7,500,000 geographers, and 311,000,000 vain men. That makes about 2,000,000,000 grown-ups. To give you an idea of the size of the Earth, I will tell you that before the invention of electricity it was necessary to maintain, over the whole of the six continents, a veritable army of 462,511 lamplighters for the street lamps.",
+                image: "https://placehold.co/800x600/059669/ffffff?text=Earth+From+Space",
+                hotspots: [
+                    { top: "35%", left: "50%", title: "Earth", description: "The planet where the little prince finally arrives." },
+                    { top: "70%", left: "40%", title: "Humanity", description: "The billions of grown-ups the little prince observes." }
+                ]
+            },
+            {
+                title: "The Snake",
+                chapter: "Chapter 17",
+                text: "The little prince crossed the desert and met nothing. But one day he saw a snake. The snake sat coiled on a rock, like a golden bracelet. 'What planet are you from?' asked the snake. 'In the constellation of Orion? That's funny! Well, what can I do for you?' 'I am lost,' said the little prince. 'I am looking for men.' 'Men,' said the snake, 'are in the desert, too. But the desert is vast.'",
+                image: "https://placehold.co/800x600/dc2626/ffffff?text=The+Snake",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Snake", description: "Mysterious creature with the power to return the little prince home." },
+                    { top: "75%", left: "60%", title: "Desert", description: "The vast, empty landscape where the little prince searches for humans." }
+                ]
+            },
+            {
+                title: "The Flower",
+                chapter: "Chapter 20",
+                text: "The little prince found a garden of roses. He was very surprised. His flower had told him that she was the only one of her kind in all the universe. And here were five thousand of them, all alike, in one single garden! He lay down in the grass and cried. He thought he was very rich with his flower, that he was the happiest man in the world. And yet his flower was only an ordinary rose.",
+                image: "https://placehold.co/800x600/be185d/ffffff?text=Garden+of+Roses",
+                hotspots: [
+                    { top: "30%", left: "40%", title: "Garden of Roses", description: "The realization that his rose is not unique in appearance." },
+                    { top: "65%", left: "60%", title: "The Little Prince", description: "Crying over the realization about his rose." }
+                ]
+            },
+            {
+                title: "The Fox",
+                chapter: "Chapter 21",
+                text: "The little prince tamed a fox. 'You must be very patient,' the fox said. 'First you will sit down at a little distance from me—like that—in the grass. I shall look at you out of the corner of my eye, and you will say nothing. Words are the source of misunderstandings. But you will sit a little closer to me every day... What is essential is invisible to the eye. It is the time you have wasted for your rose that makes your rose so important.'",
+                image: "https://placehold.co/800x600/d97706/ffffff?text=The+Foxy",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Fox", description: "Who teaches the little prince about taming and relationships." },
+                    { top: "75%", left: "60%", title: "Lesson of Taming", description: "The process of creating bonds with others." }
+                ]
+            },
+            {
+                title: "The Well",
+                chapter: "Chapter 24",
+                text: "The little prince and the aviator found a well in the desert. 'This water is different from all the rest,' said the little prince. 'It is the fruit of the effort of your arms. It is like a gift from your heart. Remember: you become forever responsible for what you have tamed. You are responsible for your rose.' The water we had drawn then had no longer been just ordinary water. It was made sweet by the song of the pulley, by the effort of my arms.",
+                image: "https://placehold.co/800x600/0891b2/ffffff?text=Desert+Well",
+                hotspots: [
+                    { top: "35%", left: "50%", title: "The Well", description: "Source of life-giving water in the desert." },
+                    { top: "70%", left: "40%", title: "The Lesson", description: "'You become forever responsible for what you have tamed.'" }
+                ]
+            },
+            {
+                title: "The Return",
+                chapter: "Chapter 26",
+                text: "The little prince had to return to his planet. 'I will look as if I were suffering. I will even make a little moan. And that will be like a little death. It will be very simple. Don't come to see that day. It will be unnecessary.' The snake would help him. 'It is as if I had given you, instead of stars, a great number of little bells that know how to laugh.' The little prince vanished silently, gently, like a tree falling in the forest with no one to hear.",
+                image: "https://placehold.co/800x600/7c3aed/ffffff?text=Return+to+Stars",
+                hotspots: [
+                    { top: "40%", left: "50%", title: "The Return", description: "The little prince's journey back to his planet and rose." },
+                    { top: "75%", left: "60%", title: "The Snake's Gift", description: "The means to return home, though it appears like death." }
+                ]
+            }
+        ];
+
+        // DOM Elements
+        const storyTitle = document.getElementById('storyTitle');
+        const chapterLabel = document.getElementById('chapterLabel');
+        const storyText = document.getElementById('storyText');
+        const visualImage = document.getElementById('visualImage');
+        const progressFill = document.getElementById('progressFill');
+        const pageCounter = document.getElementById('pageCounter');
+        const progressDots = document.getElementById('progressDots');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomValue = document.getElementById('zoomValue');
+        const zoomChipValue = document.getElementById('zoomChipValue');
+        const viewSelect = document.getElementById('viewSelect');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingFill = document.getElementById('loadingFill');
+        const musicToggle = document.getElementById('musicToggle');
+        const themeToggle = document.getElementById('themeToggle');
+        const globeContainer = document.getElementById('globeContainer');
+
+        // State
+        let currentPage = 0;
+        let isPlaying = false;
+        let zoomLevel = 1;
+        let autoPlayInterval = null;
+        let isMusicPlaying = false;
+        let currentTheme = 'dark';
+
+        // Initialize progress dots
+        function initProgressDots() {
+            progressDots.innerHTML = '';
+            storyData.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = `progress-dot ${index === currentPage ? 'active' : ''}`;
+                dot.dataset.index = index;
+                dot.addEventListener('click', () => goToPage(index));
+                progressDots.appendChild(dot);
+            });
+        }
+
+        // Update UI
+        function updateUI() {
+            const data = storyData[currentPage];
+            
+            // Update story content
+            storyTitle.textContent = data.title;
+            chapterLabel.textContent = data.chapter;
+            storyText.textContent = data.text;
+            
+            // Update image
+            visualImage.src = data.image;
+            visualImage.classList.remove('active');
+            setTimeout(() => {
+                visualImage.classList.add('active');
+            }, 100);
+            
+            // Update progress
+            const progress = (currentPage / (storyData.length - 1)) * 100;
+            progressFill.style.width = `${progress}%`;
+            pageCounter.textContent = `${String(currentPage + 1).padStart(2, '0')} / ${String(storyData.length).padStart(2, '0')}`;
+            
+            // Update progress dots
+            document.querySelectorAll('.progress-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentPage);
+            });
+            
+            // Update zoom display
+            updateZoomDisplay();
+            
+            // Update buttons
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = currentPage === storyData.length - 1;
+            
+            // Update hotspots
+            updateHotspots(data.hotspots);
+        }
+
+        // Update hotspots
+        function updateHotspots(hotspots) {
+            // Remove existing hotspots
+            document.querySelectorAll('.hotspot').forEach(hotspot => {
+                if (!hotspot.classList.contains('template')) {
+                    hotspot.remove();
+                }
+            });
+            
+            // Add new hotspots
+            hotspots.forEach(hotspot => {
+                const hotspotEl = document.createElement('div');
+                hotspotEl.className = 'hotspot';
+                hotspotEl.style.top = hotspot.top;
+                hotspotEl.style.left = hotspot.left;
+                
+                const infoEl = document.createElement('div');
+                infoEl.className = 'hotspot-info';
+                
+                const infoInner = document.createElement('div');
+                infoInner.className = 'hotspot-info-inner';
+                
+                const titleEl = document.createElement('div');
+                titleEl.className = 'hotspot-info-title';
+                titleEl.textContent = hotspot.title;
+                
+                const descEl = document.createElement('div');
+                descEl.textContent = hotspot.description;
+                
+                infoInner.appendChild(titleEl);
+                infoInner.appendChild(descEl);
+                infoEl.appendChild(infoInner);
+                hotspotEl.appendChild(infoEl);
+                
+                document.querySelector('.visual-container').appendChild(hotspotEl);
+            });
+        }
+
+        // Update zoom display
+        function updateZoomDisplay() {
+            const zoomPercent = Math.round(zoomLevel * 100);
+            zoomValue.textContent = `${zoomPercent}%`;
+            zoomChipValue.textContent = `${zoomPercent}%`;
+        }
+
+        // Navigation functions
+        function goToPage(pageIndex) {
+            if (pageIndex < 0 || pageIndex >= storyData.length || pageIndex === currentPage) return;
+            
+            currentPage = pageIndex;
+            updateUI();
+            
+            // Reset autoplay if active
+            if (isPlaying) {
+                resetAutoPlay();
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < storyData.length - 1) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        // Auto-play functionality
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                playText.textContent = 'Pause';
+                playIcon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />';
+                startAutoPlay();
+            } else {
+                playText.textContent = 'Play';
+                playIcon.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />';
+                stopAutoPlay();
+            }
+        }
+
+        function startAutoPlay() {
+            stopAutoPlay(); // Clear any existing interval
+            autoPlayInterval = setInterval(() => {
+                if (currentPage < storyData.length - 1) {
+                    nextPage();
+                } else {
+                    stopAutoPlay();
+                    isPlaying = false;
+                    playText.textContent = 'Play';
+                    playIcon.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />';
+                }
+            }, 8000);
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+            }
+        }
+
+        function resetAutoPlay() {
+            if (isPlaying) {
+                stopAutoPlay();
+                startAutoPlay();
+            }
+        }
+
+        // Zoom functions
+        function zoomIn() {
+            if (zoomLevel < 2) {
+                zoomLevel += 0.1;
+                updateZoomDisplay();
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (zoomLevel > 0.5) {
+                zoomLevel -= 0.1;
+                updateZoomDisplay();
+                applyZoom();
+            }
+        }
+
+        function applyZoom() {
+            document.querySelector('.visual-container').style.transform = `scale(${zoomLevel})`;
+        }
+
+        // 3D Globe functionality
+        function initGlobe() {
+            // This is a placeholder for 3D globe implementation
+            // In a real implementation, this would use Three.js to create an interactive globe
+            const globe = document.createElement('div');
+            globe.style.width = '100%';
+            globe.style.height = '100%';
+            globe.style.background = 'radial-gradient(circle at center, #1e3a8a, #0f172a)';
+            globe.style.borderRadius = '50%';
+            globe.style.boxShadow = 'inset -20px -20px 50px rgba(0,0,0,0.5), inset 20px 20px 50px rgba(255,255,255,0.1)';
+            globe.style.position = 'relative';
+            
+            // Add some "continents"
+            for (let i = 0; i < 5; i++) {
+                const continent = document.createElement('div');
+                continent.style.position = 'absolute';
+                continent.style.width = `${20 + Math.random() * 30}%`;
+                continent.style.height = `${15 + Math.random() * 25}%`;
+                continent.style.background = '#059669';
+                continent.style.borderRadius = '50%';
+                continent.style.left = `${20 + Math.random() * 60}%`;
+                continent.style.top = `${20 + Math.random() * 60}%`;
+                continent.style.opacity = '0.7';
+                continent.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+                globe.appendChild(continent);
+            }
+            
+            globeContainer.appendChild(globe);
+        }
+
+        // Audio functionality
+        function toggleMusic() {
+            isMusicPlaying = !isMusicPlaying;
+            musicToggle.classList.toggle('active', isMusicPlaying);
+            
+            if (isMusicPlaying) {
+                // In a real implementation, this would play ambient music
+                musicToggle.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.495a1 1 0 010 1.414l-1.586 1.586a3 3 0 014.242 4.243L19 9l-1.757.757a3 3 0 01-4.242-4.243l1.586-1.586a1 1 0 011.414 0zm-1.414 8.488l-1.586 1.586a3 3 0 01-4.243-4.242L7 11l1.757-.757a3 3 0 014.242 4.243z" clip-rule="evenodd"/></svg>';
+            } else {
+                musicToggle.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.495a1 1 0 010 1.414l-1.586 1.586a3 3 0 014.242 4.243L19 9l-1.757.757a3 3 0 01-4.242-4.243l1.586-1.586a1 1 0 011.414 0zm-1.414 8.488l-1.586 1.586a3 3 0 01-4.243-4.242L7 11l1.757-.757a3 3 0 014.242 4.243z" clip-rule="evenodd"/></svg>';
+            }
+        }
+
+        // Theme functionality
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            if (currentTheme === 'light') {
+                document.documentElement.style.setProperty('--bg', '#f8fafc');
+                document.documentElement.style.setProperty('--bg-secondary', '#e2e8f0');
+                document.documentElement.style.setProperty('--text', '#1e293b');
+                document.documentElement.style.setProperty('--text-secondary', '#64748b');
+                document.documentElement.style.setProperty('--border', '#cbd5e1');
+                themeToggle.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"/></svg>';
+            } else {
+                document.documentElement.style.setProperty('--bg', '#0f172a');
+                document.documentElement.style.setProperty('--bg-secondary', '#1e293b');
+                document.documentElement.style.setProperty('--text', '#e5e7eb');
+                document.documentElement.style.setProperty('--text-secondary', '#9ca3af');
+                document.documentElement.style.setProperty('--border', '#334155');
+                themeToggle.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>';
+            }
+        }
+
+        // View mode functionality
+        function changeView() {
+            const view = viewSelect.value;
+            let message = '';
+            
+            switch(view) {
+                case 'story':
+                    message = 'Story mode provides the narrative experience with illustrations.';
+                    break;
+                case 'timeline':
+                    message = 'Timeline view shows the progression of the little prince\'s journey.';
+                    break;
+                case 'map':
+                    message = 'Interactive map displays the planets visited by the little prince.';
+                    break;
+                case 'characters':
+                    message = 'Character gallery features all the characters from the story.';
+                    break;
+            }
+            
+            // In a real implementation, this would change the view
+            alert(`Switched to ${view.replace(/^\w/, c => c.toUpperCase())} View\n\n${message}`);
+        }
+
+        // Loading simulation
+        function simulateLoading() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }, 300);
+                }
+                loadingFill.style.width = `${progress}%`;
+            }, 100);
+        }
+
+        // Event Listeners
+        prevBtn.addEventListener('click', prevPage);
+        nextBtn.addEventListener('click', nextPage);
+        playBtn.addEventListener('click', togglePlay);
+        zoomInBtn.addEventListener('click', zoomIn);
+        zoomOutBtn.addEventListener('click', zoomOut);
+        musicToggle.addEventListener('click', toggleMusic);
+        themeToggle.addEventListener('click', toggleTheme);
+        viewSelect.addEventListener('change', changeView);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initProgressDots();
+            updateUI();
+            initGlobe();
+            simulateLoading();
+            
+            // Add subtle animations
+            gsap.from(".story-title", {
+                duration: 1,
+                y: 50,
+                opacity: 0,
+                ease: "power3.out"
+            });
+            
+            gsap.from(".story-text", {
+                duration: 1,
+                y: 30,
+                opacity: 0,
+                ease: "power3.out",
+                delay: 0.3
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    prevPage();
+                } else if (e.key === 'ArrowRight') {
+                    nextPage();
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    togglePlay();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
