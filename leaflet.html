@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>LeafletXplorer v2.3 — Nano Showroom</title>
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Plugins -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.2.0/Control.FullScreen.css"/>
+  <script src="https://unpkg.com/leaflet.fullscreen@2.2.0/Control.FullScreen.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css"/>
+  <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
+
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.18/dist/leaflet-routing-machine.min.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.0/dist/Control.MiniMap.min.css"/>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.0/dist/Control.MiniMap.min.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-easybutton@2.4.0/src/easy-button.css"/>
+  <script src="https://unpkg.com/leaflet-easybutton@2.4.0/src/easy-button.js"></script>
+
+  <!-- NEW: Plugin for measurement calculations -->
+  <script src="https://unpkg.com/leaflet-geometryutil@0.10.2/src/leaflet.geometryutil.js"></script>
+
+  <style>
+    html,body,#map{height:100%;margin:0;padding:0;font-family:sans-serif}
+    .info-box{background:#fff;padding:6px 8px;border-radius:6px;box-shadow:0 0 12px rgba(0,0,0,0.2);font-size:13px;max-width:300px;}
+    .leaflet-control-attribution{font-size:11px;}
+    .leaflet-routing-container{display:none;} /* Hides routing initially */
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+<script>
+// --- 1. INITIALIZATION & STATE PERSISTENCE ---
+const lastView = JSON.parse(localStorage.getItem('leafletXplorerView')) || {lat: 28.012, lng: -15.937, zoom: 6};
+const map = L.map('map',{zoomControl:false}).setView([lastView.lat, lastView.lng], lastView.zoom);
+L.control.zoom({position:'topright'}).addTo(map);
+
+// --- 2. BASE LAYERS ---
+const baseLayers = {
+  'OSM': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}),
+  'Topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'}),
+  'Esri': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri Imagery'})
+};
+const lastLayer = localStorage.getItem('leafletXplorerLayer') || 'OSM';
+(baseLayers[lastLayer] || baseLayers.OSM).addTo(map);
+
+// --- 3. CONTROLS ---
+L.control.scale().addTo(map);
+map.addControl(new L.Control.Fullscreen({position:'topright'}));
+new L.Control.MiniMap(baseLayers.OSM,{toggleDisplay:true,minimized:false}).addTo(map);
+L.easyButton('fa-location-arrow', ()=>map.locate({setView:true,maxZoom:16}),'Locate').addTo(map);
+
+// --- 4. DATA LAYERS ---
+const markers = L.markerClusterGroup();
+const markerData = [['Rabat',34.020882,-6.84165],['Casablanca',33.57311,-7.589843],['Laayoune',27.175015,-13.189543],['Dakhla',23.685,-15.942]];
+markerData.forEach(p=>markers.addLayer(L.marker([p[1],p[2]]).bindPopup(`<b>${p[0]}</b>`)));
+markers.addTo(map);
+
+const fixedIntensities=[0.6,0.8,0.7,0.9];
+const heat=L.heatLayer(markers.getLayers().map((m,i)=>[
+  m.getLatLng().lat, m.getLatLng().lng, fixedIntensities[i%fixedIntensities.length]
+]),{radius:25,blur:15,maxZoom:17});
+
+const regions = L.geoJSON({"type":"FeatureCollection","features":[
+  {"type":"Feature","properties":{"name":"North Coast","value":15},"geometry":{"type":"Polygon","coordinates":[[[-9,36],[-6,36],[-6,33],[-9,33],[-9,36]]]}},
+  {"type":"Feature","properties":{"name":"Central Plateau","value":25},"geometry":{"type":"Polygon","coordinates":[[[-8,33],[-5,33],[-5,30],[-8,30],[-8,33]]]}},
+  {"type":"Feature","properties":{"name":"Southern Desert","value":35},"geometry":{"type":"Polygon","coordinates":[[[-14,28],[-8,28],[-8,24],[-14,24],[-14,28]]]}}
+]}, {
+ style:f=>({fillColor: f.properties.value>30?'#e31a1c':f.properties.value>20?'#fd8d3c':'#feb24c',weight:2,opacity:1,color:'white',dashArray:'3',fillOpacity:0.7}),
+ onEachFeature:(f,l)=>l.bindPopup(`${f.properties.name}: ${f.properties.value}`)
+});
+
+// --- 5. DRAWING, PERSISTENCE & MEASUREMENT ---
+const drawnItems = new L.FeatureGroup().addTo(map);
+map.addControl(new L.Control.Draw({edit:{featureGroup:drawnItems}}));
+
+function formatMeasure(value, unit) {
+  return value > 1000 ? `${(value/1000).toFixed(2)} k${unit}` : `${Math.round(value)} ${unit}`;
+}
+function updateLayerMeasurements(layer) {
+  let content = 'No measurement';
+  if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+    const length = L.GeometryUtil.length(layer);
+    content = `Length: ${formatMeasure(length, 'm')}`;
+  } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+    const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+    content = `Area: ${formatMeasure(area, 'm²')}`;
+  } else if (layer instanceof L.Circle) {
+    const area = Math.PI * Math.pow(layer.getRadius(), 2);
+    content = `Area: ${formatMeasure(area, 'm²')}<br>Radius: ${formatMeasure(layer.getRadius(),'m')}`;
+  }
+  if (layer.getPopup()) layer.setPopupContent(content);
+  else layer.bindPopup(content);
+}
+function saveDrawn(){localStorage.setItem('leafletXplorerDraw', JSON.stringify(drawnItems.toGeoJSON()));}
+
+map.on(L.Draw.Event.CREATED, e => {
+  drawnItems.addLayer(e.layer);
+  updateLayerMeasurements(e.layer);
+  saveDrawn();
+});
+map.on(L.Draw.Event.EDITED, e => {
+    e.layers.eachLayer(layer => updateLayerMeasurements(layer));
+    saveDrawn();
+});
+map.on(L.Draw.Event.DELETED, saveDrawn);
+
+const savedDrawings = localStorage.getItem('leafletXplorerDraw');
+if (savedDrawings) {
+  L.geoJSON(JSON.parse(savedDrawings), { onEachFeature: (f, l) => {
+    drawnItems.addLayer(l);
+    updateLayerMeasurements(l);
+  }});
+}
+
+// --- 6. IMPORT / EXPORT CONTROLS ---
+L.easyButton('fa-upload', () => fileInput.click(), 'Import GeoJSON').addTo(map);
+L.easyButton('fa-download', () => {
+    const data = JSON.stringify(drawnItems.toGeoJSON());
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'map-data.geojson';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}, 'Export GeoJSON').addTo(map);
+
+// Hidden file input (cleaner than L.DomUtil)
+const fileInput = document.createElement('input');
+fileInput.type = 'file';
+fileInput.accept = '.geojson,.json';
+fileInput.style.display = 'none';
+document.body.appendChild(fileInput);
+
+fileInput.onchange = e => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const geojson = JSON.parse(event.target.result);
+        L.geoJSON(geojson, {
+          style: {color:'#3388ff', weight:2, fillOpacity:0.3},
+          onEachFeature: (f, l) => {
+            drawnItems.addLayer(l);
+            updateLayerMeasurements(l);
+          }
+        });
+        saveDrawn();
+        map.fitBounds(drawnItems.getBounds());
+      } catch (err) { alert('Invalid GeoJSON file'); console.error(err); }
+    };
+    reader.readAsText(file);
+  }
+};
+
+// --- 7. ROUTING & GEOCODING ---
+const routing = L.Routing.control({
+  router:L.Routing.osrmv1({serviceUrl:'https://router.project-osrm.org/route/v1'}),
+  waypoints:[], routeWhileDragging:true, addWaypoints:false, show:false
+}).addTo(map);
+L.easyButton('fa-road',() => {
+    const r = document.querySelector('.leaflet-routing-container');
+    r.style.display = r.style.display === 'none' ? 'block' : 'none';
+}, 'Toggle Routing').addTo(map);
+
+const geocoder = L.Control.Geocoder.nominatim();
+L.Control.geocoder({defaultMarkGeocode:false, geocoder: geocoder}).on('markgeocode', e => {
+  map.fitBounds(e.geocode.bbox);
+  L.marker(e.geocode.center).addTo(map).bindPopup(e.geocode.name).openPopup();
+}).addTo(map);
+
+// --- 8. DYNAMIC INFO BOX ---
+const info = L.control({position:'bottomleft'});
+info.onAdd = function() { this._div = L.DomUtil.create('div','info-box'); this.update(); return this._div; };
+info.update = function() {
+  const center = map.getCenter();
+  this._div.innerHTML = `<b>LeafletXplorer v2.3</b><br/>
+    Lat: ${center.lat.toFixed(4)}, Lng: ${center.lng.toFixed(4)}, Zoom: ${map.getZoom()}<br/>
+    <small>f=fullscreen, h=heat, r=routing, ?=help</small>`;
+};
+info.addTo(map);
+
+// --- 9. EVENT LISTENERS ---
+map.on('locationfound', e => L.marker(e.latlng).addTo(map).bindPopup("~"+Math.round(e.accuracy/2)+"m accuracy").openPopup());
+map.on('locationerror', e => console.warn(e.message));
+map.on('moveend', () => {
+    localStorage.setItem('leafletXplorerView', JSON.stringify({lat: map.getCenter().lat, lng: map.getCenter().lng, zoom: map.getZoom()}));
+    info.update();
+});
+map.on('baselayerchange', e => localStorage.setItem('leafletXplorerLayer', e.name));
+
+map.on('click', e => {
+  const coords = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+  let popupContent = `<b>${coords}</b>`;
+  const popup = L.popup().setLatLng(e.latlng).setContent('Loading address...').openOn(map);
+  geocoder.reverse(e.latlng, map.options.crs.scale(map.getZoom()), results => {
+    if (results && results.length > 0) {
+      popupContent += `<br/><small>${results[0].name}</small>`;
+    }
+    popup.setContent(popupContent + `<br/><small>(copied)</small>`);
+  });
+  navigator.clipboard.writeText(coords);
+});
+
+// --- 10. FINAL SETUP (Overlays + Persistence) ---
+const overlays = {
+  "Clusters": markers,
+  "Heatmap": heat,
+  "Routes": routing,
+  "Choropleth": regions,
+  "My Drawings": drawnItems
+};
+
+// Overlay persistence
+function loadOverlayState(overlays) {
+  const saved = JSON.parse(localStorage.getItem('leafletXplorerOverlays') || '{}');
+  Object.keys(overlays).forEach(name => {
+    if (saved[name]) {
+      if (!map.hasLayer(overlays[name])) map.addLayer(overlays[name]);
+    } else {
+      if (map.hasLayer(overlays[name])) map.removeLayer(overlays[name]);
+    }
+  });
+}
+function saveOverlayState(overlays) {
+  const state = {};
+  Object.keys(overlays).forEach(name => {
+    state[name] = map.hasLayer(overlays[name]);
+  });
+  localStorage.setItem('leafletXplorerOverlays', JSON.stringify(state));
+}
+loadOverlayState(overlays);
+
+L.control.layers(baseLayers,overlays,{collapsed:false}).addTo(map);
+
+map.on('overlayadd', () => saveOverlayState(overlays));
+map.on('overlayremove', () => saveOverlayState(overlays));
+
+document.addEventListener('keydown', e => {
+  if (document.activeElement.tagName === 'INPUT') return;
+  if (e.key==='f') map.toggleFullscreen();
+  if (e.key==='h') map.hasLayer(heat) ? map.removeLayer(heat) : heat.addTo(map);
+  if (e.key==='r') document.querySelector('.leaflet-routing-container').style.display = document.querySelector('.leaflet-routing-container').style.display === 'none' ? 'block' : 'none';
+  if (e.key==='?') alert("LeafletXplorer Help:\n- f = fullscreen\n- h = toggle heatmap\n- r = toggle routing panel\n- Draw to save locally\n- Click map for info");
+});
+
+window.Xplorer = map;
+</script>
+</body>
+</html>
