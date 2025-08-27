@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen AI Style OpenStreetMap</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --qwen-blue: #0d6efd;
+            --qwen-blue-light: #4da0ff;
+            --qwen-blue-dark: #0a58ca;
+            --qwen-gray: #f8f9fa;
+            --qwen-dark: #212529;
+            --qwen-border: #dee2e6;
+            --qwen-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --qwen-radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f4f8, #e6f0ff);
+            color: var(--qwen-dark);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, var(--qwen-blue), var(--qwen-blue-dark));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #555;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: white;
+            border-radius: var(--qwen-radius);
+            box-shadow: var(--qwen-shadow);
+            overflow: hidden;
+            padding: 20px;
+        }
+        
+        @media (min-width: 992px) {
+            .app-container {
+                flex-direction: row;
+            }
+        }
+        
+        .map-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: var(--qwen-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            height: 500px;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+            border-radius: var(--qwen-radius);
+        }
+        
+        .controls-panel {
+            width: 100%;
+            background: white;
+            border-radius: var(--qwen-radius);
+            padding: 25px;
+            box-shadow: var(--qwen-shadow);
+        }
+        
+        @media (min-width: 992px) {
+            .controls-panel {
+                width: 340px;
+            }
+        }
+        
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: var(--qwen-dark);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--qwen-border);
+        }
+        
+        .search-box {
+            display: flex;
+            margin-bottom: 25px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 1px solid var(--qwen-border);
+            border-radius: 8px 0 0 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .search-box input:focus {
+            border-color: var(--qwen-blue);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+        }
+        
+        .search-box button {
+            background: var(--qwen-blue);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+        
+        .search-box button:hover {
+            background: var(--qwen-blue-dark);
+        }
+        
+        .features {
+            margin-top: 30px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            padding: 18px 0;
+            border-bottom: 1px solid var(--qwen-border);
+        }
+        
+        .feature:last-child {
+            border-bottom: none;
+        }
+        
+        .feature i {
+            width: 44px;
+            height: 44px;
+            background: rgba(13, 110, 253, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            color: var(--qwen-blue);
+            font-size: 1.2rem;
+        }
+        
+        .feature-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        .feature-info p {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .legend {
+            background: var(--qwen-gray);
+            padding: 20px;
+            border-radius: var(--qwen-radius);
+            margin-top: 25px;
+        }
+        
+        .legend h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: var(--qwen-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            margin-right: 12px;
+        }
+        
+        .legend-label {
+            font-size: 0.95rem;
+            color: #555;
+        }
+        
+        footer {
+            text-align: center;
+            color: #666;
+            padding: 25px 20px;
+            margin-top: 25px;
+            font-size: 0.95rem;
+            border-top: 1px solid var(--qwen-border);
+        }
+        
+        .qwen-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(13, 110, 253, 0.1);
+            color: var(--qwen-blue);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .leaflet-control-attribution {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            font-size: 0.8rem !important;
+        }
+        
+        .custom-marker {
+            background: var(--qwen-blue);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .custom-marker::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .leaflet-bar a {
+            background: white !important;
+            color: var(--qwen-blue) !important;
+            border-radius: 8px !important;
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+        }
+        
+        .leaflet-bar a:hover {
+            background: var(--qwen-blue) !important;
+            color: white !important;
+        }
+        
+        .layer-control {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .layer-control label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        
+        .layer-control input {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-map-marked-alt"></i> Qwen AI OpenStreetMap</h1>
+            <p class="subtitle">Explore the world with this modern, AI-inspired mapping interface powered by Leaflet.js and OpenStreetMap data</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="map-wrapper">
+                <div id="map"></div>
+            </div>
+            
+            <div class="controls-panel">
+                <h2 class="panel-title"><i class="fas fa-sliders-h"></i> Map Controls</h2>
+                
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search for a location...">
+                    <button id="search-btn"><i class="fas fa-search"></i> Search</button>
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="feature-info">
+                            <h3>Multiple Map Layers</h3>
+                            <p>Switch between different map styles including satellite and topographic views</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature">
+                        <i class="fas fa-location-dot"></i>
+                        <div class="feature-info">
+                            <h3>Geolocation</h3>
+                            <p>Find your current location with precision accuracy</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature">
+                        <i class="fas fa-draw-polygon"></i>
+                        <div class="feature-info">
+                            <h3>Interactive Features</h3>
+                            <p>Click on markers and shapes to view detailed information</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div class="feature-info">
+                            <h3>Fully Responsive</h3>
+                            <p>Optimized for all devices from mobile to desktop</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <h3><i class="fas fa-map-marker-alt"></i> Map Legend</h3>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #0d6efd;"></div>
+                        <div class="legend-label">Major Cities</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #198754;"></div>
+                        <div class="legend-label">Landmarks</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #fd7e14;"></div>
+                        <div class="legend-label">Points of Interest</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Interactive OpenStreetMap with Leaflet.js | Designed with Qwen AI aesthetics</p>
+            <div class="qwen-badge">
+                <i class="fas fa-robot"></i> Powered by Qwen AI Design Principles
+            </div>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([51.505, -0.09], 13);
+        
+        // Add OpenStreetMap tiles
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Add satellite layer
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 19
+        });
+        
+        // Add topographic layer
+        const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+            maxZoom: 17
+        });
+        
+        // Add a custom marker
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            iconSize: [26, 26]
+        });
+        
+        // Add sample markers
+        const marker1 = L.marker([51.5, -0.09], {icon: customIcon}).addTo(map)
+            .bindPopup('<b>Central London</b><br>Beautiful city center with historical landmarks.')
+            .openPopup();
+        
+        const marker2 = L.marker([51.51, -0.1], {icon: customIcon}).addTo(map)
+            .bindPopup('<b>Westminster</b><br>Historic district with Parliament and Big Ben.');
+        
+        const marker3 = L.marker([51.52, -0.08], {icon: customIcon}).addTo(map)
+            .bindPopup('<b>Shoreditch</b><br>Creative and vibrant area with street art.');
+        
+        // Add a circle
+        const circle = L.circle([51.508, -0.11], {
+            color: '#198754',
+            fillColor: '#198754',
+            fillOpacity: 0.3,
+            radius: 500
+        }).addTo(map).bindPopup('Green Park Area');
+        
+        // Add a polygon
+        const polygon = L.polygon([
+            [51.505, -0.08],
+            [51.51, -0.06],
+            [51.51, -0.04]
+        ], {
+            color: '#fd7e14',
+            fillColor: '#fd7e14',
+            fillOpacity: 0.3
+        }).addTo(map).bindPopup('Historic District');
+        
+        // Add a scale control
+        L.control.scale({imperial: true, metric: true}).addTo(map);
+        
+        // Geolocation control
+        const geolocationControl = L.control({position: 'topleft'});
+        geolocationControl.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+            div.innerHTML = '<i class="fas fa-location-crosshairs" style="font-size:18px; padding:9px;"></i>';
+            div.style.backgroundColor = 'white';
+            div.style.cursor = 'pointer';
+            div.title = 'Find my location';
+            
+            div.onclick = function() {
+                map.locate({setView: true, maxZoom: 16});
+            };
+            
+            return div;
+        };
+        geolocationControl.addTo(map);
+        
+        // Handle geolocation found
+        map.on('locationfound', function(e) {
+            L.marker(e.latlng).addTo(map)
+                .bindPopup('You are here!').openPopup();
+            L.circle(e.latlng, e.accuracy/2, {
+                color: '#0d6efd',
+                fillColor: '#0d6efd',
+                fillOpacity: 0.2
+            }).addTo(map);
+        });
+        
+        // Handle geolocation error
+        map.on('locationerror', function(e) {
+            alert("Geolocation failed: " + e.message);
+        });
+        
+        // Search functionality
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const query = document.getElementById('search-input').value;
+            if (query) {
+                // In a real app, you would call a geocoding API
+                alert(`Searching for: ${query}\nIn a real application, this would use a geocoding service.`);
+            }
+        });
+        
+        // Handle Enter key in search
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('search-btn').click();
+            }
+        });
+        
+        // Add layer control
+        const baseLayers = {
+            "OpenStreetMap": osmLayer,
+            "Satellite": satelliteLayer,
+            "Topographic": topoLayer
+        };
+        
+        const overlays = {
+            "Markers": L.layerGroup([marker1, marker2, marker3]),
+            "Areas": L.layerGroup([circle, polygon])
+        };
+        
+        L.control.layers(baseLayers, overlays, {
+            position: 'bottomright',
+            collapsed: false
+        }).addTo(map);
+        
+        // Add a custom control for map info
+        const infoControl = L.control({position: 'bottomleft'});
+        infoControl.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+            div.innerHTML = '<i class="fas fa-info-circle" style="font-size:18px; padding:9px;"></i>';
+            div.style.backgroundColor = 'white';
+            div.style.cursor = 'pointer';
+            div.title = 'Map information';
+            
+            div.onclick = function() {
+                alert('This map uses OpenStreetMap data with Leaflet.js. It includes features like markers, polygons, geolocation, and multiple map layers.');
+            };
+            
+            return div;
+        };
+        infoControl.addTo(map);
+        
+        // Customize map controls
+        document.querySelector('.leaflet-control-zoom').style.borderRadius = '8px';
+        document.querySelector('.leaflet-control-layers').style.borderRadius = '8px';
+    </script>
+</body>
+</html>
